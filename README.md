@@ -352,10 +352,6 @@ Module pins (rarely overridden):
 
 ## Troubleshooting
 
-- **"kernel module koma is missing from …/koma/plain-tcp"** — `make`
-  has not been run inside `koma/{plain-tcp,grpc,tls}/` on the server.
-  Re-run `bench/fabs/run_all.sh --setup` after the server is booted into
-  `6.8.0-koma`.
 - **`uname -r` does not print `6.8.0-koma`** — server didn't boot the
   patched kernel. Confirm GRUB_DEFAULT, then `sudo reboot`.
 - **kTLS verification fails after `--verify-ktls`** — the loaded
