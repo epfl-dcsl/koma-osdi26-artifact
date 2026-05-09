@@ -53,30 +53,23 @@
             ymajorgrids=true,
             yminorgrids=true,
         ]
-        \addlegendimage{ultra thick, cRed!70, dashed}
+        \addplot[ultra thick, cRed!70, dashed] table [x=latency_us, y=ccdf, col sep=comma] {data/silo_ccdf_downsampled_Delivery.csv};
         \addlegendentry{Delivery}
 
-        \addlegendimage{ultra thick, cViolet!80, dashed}
+        \addplot[ultra thick, cViolet!80, dashed] table [x=latency_us, y=ccdf, col sep=comma] {data/silo_ccdf_downsampled_StockLevel.csv};
         \addlegendentry{StockLevel}
 
-        \addlegendimage{ultra thick, cYellow, solid}
+        \addplot[ultra thick, cYellow, solid] table [x=latency_us, y=ccdf, col sep=comma] {data/silo_ccdf_downsampled_all.csv};
         \addlegendentry{Overall}
 
-        \addlegendimage{ultra thick, cGreen!80, dashed}
+        \addplot[ultra thick, cGreen!80, dashed] table [x=latency_us, y=ccdf, col sep=comma] {data/silo_ccdf_downsampled_NewOrder.csv};
         \addlegendentry{NewOrder}
 
-        \addlegendimage{ultra thick, cBlue!80, dashed}
+        \addplot[ultra thick, cBlue!80, dashed] table [x=latency_us, y=ccdf, col sep=comma] {data/silo_ccdf_downsampled_Payment.csv};
         \addlegendentry{Payment}
 
-        \addlegendimage{ultra thick, gray!80, dashed}
+        \addplot[ultra thick, gray!80, dashed] table [x=latency_us, y=ccdf, col sep=comma] {data/silo_ccdf_downsampled_OrderStatus.csv};
         \addlegendentry{OrderStatus}
-
-        \SiloPlot{ultra thick, cRed!70, dashed}{x=latency_us, y=ccdf}{data/silo_ccdf_downsampled_Delivery.csv}
-        \SiloPlot{ultra thick, cViolet!80, dashed}{x=latency_us, y=ccdf}{data/silo_ccdf_downsampled_StockLevel.csv}
-        \SiloPlot{ultra thick, cYellow, solid}{x=latency_us, y=ccdf}{data/silo_ccdf_downsampled_all.csv}
-        \SiloPlot{ultra thick, cGreen!80, dashed}{x=latency_us, y=ccdf}{data/silo_ccdf_downsampled_NewOrder.csv}
-        \SiloPlot{ultra thick, cBlue!80, dashed}{x=latency_us, y=ccdf}{data/silo_ccdf_downsampled_Payment.csv}
-        \SiloPlot{ultra thick, gray!80, dashed}{x=latency_us, y=ccdf}{data/silo_ccdf_downsampled_OrderStatus.csv}
         \end{axis}
     \end{tikzpicture}
     \caption{CCDF of task execution time}
