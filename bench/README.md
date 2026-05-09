@@ -1,8 +1,8 @@
 # Koma OSDI Benchmark Harness
 
 This directory contains the benchmark harness used by the OSDI artifact. It is
-trimmed to the paper performance reproduction matrix documented in
-`../plan/agents/reproduction-matrix.md`.
+trimmed to the paper performance reproduction matrix; see the top-level
+[`README.md`](../README.md) for the figure-to-task mapping.
 
 ## Layout
 

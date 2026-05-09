@@ -15,8 +15,8 @@ jumpbox); the harness ssh's into the cluster from there. See the
 
 ```bash
 # 1. Clone and create the driver venv.
-git clone <this-artifact-url> ~/koma-osdi
-cd ~/koma-osdi
+git clone <this-artifact-url> ~/koma-osdi26-artifact
+cd ~/koma-osdi26-artifact
 python3 -m venv .fab-venv
 .fab-venv/bin/pip install -r bench/requirements.txt
 
@@ -95,8 +95,8 @@ Run these on the machine that will drive Fabric (your laptop or a
 CloudLab jumpbox). Fabric ssh's from here into the cluster.
 
 ```bash
-git clone <this-artifact-url> ~/koma-osdi
-cd ~/koma-osdi
+git clone <this-artifact-url> ~/koma-osdi26-artifact
+cd ~/koma-osdi26-artifact
 python3 -m venv .fab-venv
 .fab-venv/bin/pip install -r bench/requirements.txt
 ```
@@ -197,7 +197,7 @@ If you want to verify the Silo build in isolation (or rebuild after a
 toolchain change) before running experiments, on the server:
 
 ```bash
-cd ~/koma-osdi/bench/servers/silo
+cd ~/koma-osdi26-artifact/bench/servers/silo
 MODE=perf make -j$(nproc)               # production objects (out-perf.masstree/)
 MODE=perf make -j$(nproc) dbtest        # standalone smoke-test binary
 ```
@@ -328,8 +328,8 @@ Cluster (consumed by `fab_config.py`):
 | `KOMA_OSDI_ASYM_CLIENTS`      | 12 Utah `hp` nodes from `fab_config.py` | gRPC client agents; first host is the latency agent   |
 | `KOMA_OSDI_TLS_SERVER`        | = `KOMA_OSDI_SERVER`                 | server for TLS experiments (in case it differs)          |
 | `KOMA_OSDI_HOME_DIR`          | remote `$HOME`                       | override remote home directory                           |
-| `KOMA_OSDI_PROJECT_DIR`       | `$HOME/koma-osdi`                    | repo path on remote hosts                                |
-| `KOMA_OSDI_PROJECT_REPO`      | `git@github.com:epfl-dcsl/koma-osdi.git` | repo cloned/updated by Fabric                        |
+| `KOMA_OSDI_PROJECT_DIR`       | `$HOME/koma-osdi26-artifact`         | repo path on remote hosts                                |
+| `KOMA_OSDI_PROJECT_REPO`      | `git@github.com:epfl-dcsl/koma-osdi26-artifact.git` | repo cloned/updated by Fabric             |
 | `KOMA_OSDI_GO_VERSION`        | `1.25.0`                             | Go version installed by `--setup`                        |
 | `KOMA_OSDI_IFACE`             | auto-detected                        | override NIC/interface detection in `fab_utils.get_iface` |
 | `KOMA_OSDI_IP_ADDR`           | auto-detected                        | override NIC IP detection in `fab_utils.get_ip_addr`     |

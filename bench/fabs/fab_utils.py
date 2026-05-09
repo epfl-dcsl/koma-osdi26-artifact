@@ -75,11 +75,11 @@ class ProjDir(object):
         self.grpc_dir = "{}/grpc".format(self.home_dir)
         self.proj_dir = getenv_any(
             ["KOMA_OSDI_PROJECT_DIR"],
-            "{}/koma-osdi".format(self.home_dir),
+            "{}/koma-osdi26-artifact".format(self.home_dir),
         )
         self.project_repo_url = getenv_any(
             ["KOMA_OSDI_PROJECT_REPO"],
-            "git@github.com:epfl-dcsl/koma-osdi.git",
+            "git@github.com:epfl-dcsl/koma-osdi26-artifact.git",
         )
         self.ssh_private_key = getenv_any(
             ["KOMA_OSDI_SSH_KEY"],
