@@ -4,8 +4,8 @@ This directory contains the Koma kernel module source for the **kTLS**
 configuration. It is the same `AF_KOMA` module as `../plain-tcp/`, with
 additional hooks for in-kernel TLS.
 
-This variant is the baseline used for the kTLS figures
-(`fig:ktls_eval`, TLS rows of `fig:silo`).
+This variant is the baseline used for the kTLS figures (Figure 10 and the
+TLS rows of Figure 11).
 
 ## Layout
 
@@ -20,10 +20,10 @@ The kernel patches needed for the kTLS variant live one level up at
 - `ktls-module.patch` — additional patch to `net/tls/tls_sw.c` required by
   Koma's interaction with kTLS.
 
-Both patches are applied together by `cloudlab-patch-koma-kernel` before
-the kernel is built; the resulting `tls.ko` is installed via the standard
-`make modules_install`. `cloudlab-verify-ktls-module` confirms that the
-`tls` module loaded after reboot is the patched build.
+Both patches are applied together by `bench/fabs/run_all.sh --patch-kernel`
+before the kernel is built; the resulting `tls.ko` is installed via the
+standard `make modules_install`. `bench/fabs/run_all.sh --verify-ktls`
+confirms that the `tls` module loaded after reboot is the patched build.
 
 ## Build
 

@@ -7,8 +7,7 @@ implemented as an out-of-tree Linux kernel module that registers a new
 `AF_KOMA` address family.
 
 This variant is the baseline used for the synthetic-TCP figures
-(`fig:synthetic_100us`, `fig:synthetic_20us`) and the non-TLS Silo runs
-(`fig:silo`).
+(Figure 7, Figure 8) and the non-TLS Silo runs (Figure 11).
 
 ## Layout
 
@@ -21,13 +20,12 @@ The kernel patches required by all variants live one level up at
 `AF_KOMA`/`PF_KOMA`/`SOL_KOMA` plus the hooks in `tcp.c`, `tcp_output.c`,
 `kcmsock.c`, `socket.c`, `strparser.c`, and selinux that the module
 relies on; `ktls-module.patch` adds the in-kernel TLS hooks needed by
-the kTLS variant. Both are applied together by `cloudlab-patch-koma-kernel`.
+the kTLS variant. Both are applied together by `bench/fabs/run_all.sh --patch-kernel`.
 
 ## Build
 
 The module must be built **on the server**, **after** booting into the
-patched `6.8.0-koma` kernel produced by the artifact's
-`cloudlab-patch-koma-kernel` task.
+patched `6.8.0-koma` kernel produced by `bench/fabs/run_all.sh --patch-kernel`.
 
 ```bash
 cd koma/plain-tcp
@@ -40,8 +38,9 @@ The harness loads/unloads the module automatically per experiment via
 
 ## How this is used by the artifact
 
-The kernel patch is applied by the `cloudlab-patch-koma-kernel` fab task
-in [../../bench/fabs/fabfile.py](../../bench/fabs/fabfile.py). The module
+The kernel patch is applied by `bench/fabs/run_all.sh --patch-kernel`,
+which invokes the underlying fab task in
+[../../bench/fabs/fabfile.py](../../bench/fabs/fabfile.py). The module
 produced by `make` here is loaded by the harness whenever a `koma`-family
 server config (`koma`, `silo-koma`, …) is selected. See
 [../../bench/README.md](../../bench/README.md) for the full reproduction

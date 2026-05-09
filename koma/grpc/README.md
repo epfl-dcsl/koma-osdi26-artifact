@@ -4,9 +4,8 @@ This directory contains the Koma kernel module source for the **gRPC**
 configuration. It is the same `AF_KOMA` module as `../plain-tcp/`, with
 additional hooks needed by the Go-side gRPC integration.
 
-This variant is the baseline used for the gRPC figures
-(`fig:synthetic_grpc`, gRPC rows of `fig:silo`) and the gRPC CPU breakdown
-table (`tab:grpc-breakdown`).
+This variant is the baseline used for the gRPC figures (Figure 9 and the
+gRPC rows of Figure 11).
 
 ## Layout
 
@@ -18,7 +17,7 @@ table (`tab:grpc-breakdown`).
 
 Kernel patches are shared across all variants and live at
 [`../patches/`](../patches/) (applied together by
-`cloudlab-patch-koma-kernel`).
+`bench/fabs/run_all.sh --patch-kernel`).
 
 ## Companion Go modules
 
