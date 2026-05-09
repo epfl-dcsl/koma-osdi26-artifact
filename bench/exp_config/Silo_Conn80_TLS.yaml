@@ -1,0 +1,14 @@
+key_size_gen: "fixed:1024"
+value_size_gen: "fixed:2"
+key_cnt: "5"
+r_w_ratio: "1"
+key_selector: "uni"
+loadConns: 80
+loadThreads: 20
+loadPattern: "fixed:x:20000"
+reqPerConn: 400000
+start_load: 10000
+end_load: 340000
+service_time: 10
+n_repetitions: 3
+step: 10000

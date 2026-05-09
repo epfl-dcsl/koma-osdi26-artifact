@@ -1,0 +1,14 @@
+*.o
+*.ko
+*.mod
+*.cmd
+*.symvers
+*.mod.c
+*.order
+.cache/
+compile_commands.json
+*dump.log
+*.svg
+*.png
+build/
+*.d

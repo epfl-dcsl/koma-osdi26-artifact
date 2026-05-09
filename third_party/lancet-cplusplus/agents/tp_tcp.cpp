@@ -1,0 +1,929 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2019-2021 Ecole Polytechnique Federale Lausanne (EPFL)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+#include <iostream>
+#include <vector>
+#include <cstring>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/uio.h>
+#include <sys/epoll.h>
+#include <pthread.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <cassert>
+#include <ctime>
+
+#include <lancet/error.hpp>
+#include <lancet/misc.hpp>
+#include <lancet/timestamping.hpp>
+#include <lancet/tp_proto.hpp>
+
+static thread_local std::vector<tcp_connection> connections;
+static thread_local int epoll_fd;
+static thread_local std::vector<pending_tx_timestamps> per_conn_tx_timestamps;
+static thread_local std::vector<std::unordered_map<uint32_t, timestamp_info>>
+	per_conn_tx_timestamps_map;
+
+static inline struct tcp_connection *pick_conn()
+{
+	int idx;
+	struct tcp_connection *c;
+
+	idx = rand() % (get_conn_count() / get_thread_count());
+	c = &connections[idx];
+	if ((c->pending_reqs < get_max_pending_reqs()) && (!c->closed))
+		return c;
+
+	return NULL;
+}
+
+static int latency_open_connections(void)
+{
+	struct sockaddr_in addr;
+	int i, ret, sock, per_thread_conn, million = 1e6, one = 1, dest_idx;
+	struct linger linger;
+	std::vector<host_tuple> targets;
+
+	addr.sin_family = AF_INET;
+
+	per_thread_conn = get_conn_count() / get_thread_count();
+	connections.resize(per_thread_conn);
+	targets = get_targets();
+
+	for (i = 0; i < per_thread_conn; i++) {
+		sock = socket(AF_INET, SOCK_STREAM, 0);
+		if (sock == -1) {
+			lancet_perror("Error creating socket");
+			return -1;
+		}
+		dest_idx = i % get_target_count();
+		addr.sin_port = htons(targets[dest_idx].port);
+		addr.sin_addr.s_addr = targets[dest_idx].ip;
+		ret = connect(sock, reinterpret_cast<struct sockaddr *>(&addr),
+					  sizeof(addr));
+		if (ret) {
+			lancet_perror("Error connecting");
+			return -1;
+		}
+		/* Disable Nagle */
+		ret = setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+		if (ret) {
+			lancet_perror("Error setsockopt TCP_NODELAY");
+			return -1;
+		}
+		/* Close with RST not FIN */
+		linger.l_onoff = 1;
+		linger.l_linger = 0;
+		if (setsockopt(sock, SOL_SOCKET, SO_LINGER,
+					   reinterpret_cast<void *>(&linger), sizeof(linger))) {
+			perror("setsockopt(SO_LINGER)");
+			exit(1);
+		}
+		/* Enable busy polling */
+		ret = setsockopt(sock, SOL_SOCKET, SO_BUSY_POLL, &million,
+						 sizeof(million));
+		if (ret) {
+			lancet_perror("Error setsockopt SO_BUSY_POLL");
+			return -1;
+		}
+		connections[i].fd = sock;
+		connections[i].closed = 0;
+#if 0
+		if (dest_idx == 0)
+			t_ctx->connections[i].master_conn = NULL;
+		else
+			t_ctx->connections[i].master_conn = &t_ctx->connections[i - dest_idx];
+#endif
+	}
+	return 0;
+}
+
+static int throughput_open_connections(void)
+{
+	/*init epoll*/
+	struct sockaddr_in addr;
+	int i, efd, ret, sock, per_thread_conn, dest_idx, n;
+	int one = 1;
+	struct epoll_event event;
+	struct linger linger;
+	std::vector<host_tuple> targets;
+
+	addr.sin_family = AF_INET;
+	efd = epoll_create(1);
+	if (efd < 0) {
+		lancet_perror("epoll_create error");
+		return -1;
+	}
+
+	per_thread_conn = get_conn_count() / get_thread_count();
+	connections.resize(per_thread_conn);
+	assert(connections.size());
+	if ((get_agent_type() == SYMMETRIC_NIC_TIMESTAMP_AGENT) ||
+		(get_agent_type() == SYMMETRIC_AGENT)) {
+		per_conn_tx_timestamps.resize(per_thread_conn);
+		assert(per_conn_tx_timestamps.size());
+		for (i = 0; i < per_thread_conn; i++) {
+			per_conn_tx_timestamps[i].pending.resize(get_max_pending_reqs());
+			assert(per_conn_tx_timestamps[i].pending.size());
+		}
+	}
+	if ((get_agent_type() == SYMMETRIC_MAPPING_AGENT)) {
+		per_conn_tx_timestamps_map.resize(per_thread_conn);
+		assert(per_conn_tx_timestamps_map.size());
+	}
+
+	targets = get_targets();
+
+	for (i = 0; i < per_thread_conn; i++) {
+		sock = socket(AF_INET, SOCK_STREAM, 0);
+		if (sock == -1) {
+			lancet_perror("Error creating socket");
+			return -1;
+		}
+		dest_idx = i % get_target_count();
+		addr.sin_port = htons(targets[dest_idx].port);
+		addr.sin_addr.s_addr = targets[dest_idx].ip;
+		ret = connect(sock, reinterpret_cast<struct sockaddr *>(&addr),
+					  sizeof(addr));
+		if (ret) {
+			lancet_perror("Error connecting");
+			return -1;
+		}
+		ret = fcntl(sock, F_SETFL, O_NONBLOCK);
+		if (ret == -1) {
+			lancet_perror("Error while setting nonblocking");
+			return -1;
+		}
+		n = 524288;
+		ret = setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &n, sizeof(n));
+		if (ret) {
+			lancet_perror("Error setsockopt");
+			return -1;
+		}
+		n = 524288;
+		ret = setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &n, sizeof(n));
+		if (ret) {
+			lancet_perror("Error setsockopt");
+			return -1;
+		}
+
+		if (get_agent_type() == SYMMETRIC_NIC_TIMESTAMP_AGENT) {
+			if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE,
+						   get_if_name().c_str(), get_if_name().length())) {
+				lancet_perror("setsockopt SO_BINDTODEVICE");
+				return -1;
+			}
+			ret = sock_enable_timestamping(sock);
+			if (ret) {
+				lancet_fprintf(std::cerr, "sock enable timestamping failed\n");
+				return -1;
+			}
+		}
+
+		/* Disable Nagle's algorithm */
+		ret = setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+		if (ret) {
+			lancet_perror("Error setsockopt");
+			return -1;
+		}
+
+		/* Close with RST not FIN */
+		linger.l_onoff = 1;
+		linger.l_linger = 0;
+		if (setsockopt(sock, SOL_SOCKET, SO_LINGER,
+					   reinterpret_cast<void *>(&linger), sizeof(linger))) {
+			perror("setsockopt(SO_LINGER)");
+			exit(1);
+		}
+		event.events = EPOLLIN;
+		event.data.u32 = i;
+		ret = epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event);
+		if (ret) {
+			lancet_perror("Error while adding to epoll group");
+			return -1;
+		}
+		connections[i].fd = sock;
+		connections[i].pending_reqs = 0;
+		connections[i].idx = i;
+		connections[i].buffer_idx = 0;
+		connections[i].closed = 0;
+		connections[i].rpc_id = 0;
+	}
+	epoll_fd = efd;
+	return 0;
+}
+
+static void throughput_tcp_main(int thread_idx)
+{
+	int ready, idx, i, conn_per_thread, ret, bytes_to_send;
+	long next_tx;
+	std::vector<struct epoll_event> events;
+	struct tcp_connection *conn;
+	struct request *to_send;
+	struct consume_resp_pair read_res;
+	struct byte_req_pair send_res;
+	struct timespec tx_timestamp;
+	int start_iov;
+
+	if (throughput_open_connections())
+		return;
+
+	lancet_fprintf(std::cerr, "start throughput tcp main\n");
+	/*Initializations*/
+	conn_per_thread = get_conn_count() / get_thread_count();
+	events.resize(conn_per_thread);
+
+	pthread_barrier_wait(&conn_open_barrier);
+	set_conn_open(1);
+
+	next_tx = time_ns();
+	while (1) {
+		if (!should_load()) {
+			next_tx = time_ns();
+			// lancet_fprintf(std::cerr, "Shouldnt  load\n");
+			continue;
+		}
+		while (time_ns() >= next_tx) {
+			conn = pick_conn();
+			if (!conn)
+				goto REP_PROC;
+			to_send = prepare_request();
+			bytes_to_send = 0;
+			start_iov = 0;
+			for (i = 0; i < to_send->iov_cnt; i++)
+				bytes_to_send += to_send->iovs[i].iov_len;
+			while (1) {
+				ret = writev(conn->fd, &to_send->iovs[start_iov],
+							 to_send->iov_cnt);
+				if ((ret < 0) && (errno != EWOULDBLOCK)) {
+					lancet_perror("Unknown connection error write\n");
+					return;
+				}
+				if (ret < 0)
+					continue;
+				if (ret == bytes_to_send)
+					break;
+				bytes_to_send -= ret;
+				for (i = start_iov; i < start_iov + to_send->iov_cnt; i++) {
+					if (ret < to_send->iovs[i].iov_len) {
+						// Adjust the void pointer using char pointer
+						char *base =
+							static_cast<char *>(to_send->iovs[i].iov_base);
+						to_send->iovs[i].iov_len -= ret;
+						to_send->iovs[i].iov_base =
+							static_cast<void *>(base + ret);
+						break;
+					}
+					ret -= to_send->iovs[i].iov_len;
+				}
+				to_send->iov_cnt -= i - start_iov;
+				start_iov = i;
+			}
+			conn->pending_reqs++;
+			time_ns_to_ts(&tx_timestamp);
+			add_tx_timestamp(&tx_timestamp);
+
+			/*BookKeeping*/
+			send_res.bytes = ret;
+			send_res.reqs = 1;
+			add_throughput_tx_sample(send_res);
+
+			/*Schedule next*/
+			next_tx += get_ia();
+		}
+	REP_PROC:
+		/* process responses */
+		ready = epoll_wait(epoll_fd, events.data(), conn_per_thread, 0);
+		for (i = 0; i < ready; i++) {
+			idx = events[i].data.u32;
+			conn = &connections[idx];
+			/* Handle incoming packet */
+			if (events[i].events & EPOLLIN) {
+				// read into the connection buffer
+				ret = recv(conn->fd, &conn->buffer[conn->buffer_idx],
+						   MAX_PAYLOAD - conn->buffer_idx, 0);
+				if ((ret < 0) && (errno != EWOULDBLOCK)) {
+					lancet_perror("Unknown connection error read\n");
+					return;
+				}
+				if (ret == 0) {
+					close(conn->fd);
+					lancet_fprintf(std::cerr, "Connection closed\n");
+					conn->closed = 1;
+					continue;
+				}
+				conn->buffer_idx += ret;
+
+				read_res = handle_response(conn);
+				if (read_res.reqs > 0) {
+					conn->pending_reqs -= read_res.reqs;
+					/* Bookkeeping */
+					struct byte_req_pair byte_res = {read_res.bytes,
+													 read_res.reqs};
+					add_throughput_rx_sample(byte_res);
+				}
+			} else
+				assert(0);
+		}
+	}
+}
+
+static void latency_tcp_main(int thread_idx)
+{
+	int i, ret, bytes_to_send;
+	long start_time, end_time, next_tx;
+	struct tcp_connection *conn;
+	struct request *to_send;
+	struct consume_resp_pair read_res;
+	struct byte_req_pair send_res;
+
+	if (latency_open_connections())
+		exit(-1);
+	lancet_fprintf(std::cerr, "start latency tcp main\n");
+	next_tx = time_ns();
+	while (1) {
+		if (!should_load()) {
+			// lancet_fprintf(std::cerr, "Shouldnt load\n");
+			next_tx = time_ns();
+			continue;
+		}
+		if (time_ns() < next_tx)
+			continue;
+		conn = pick_conn();
+		if (!conn)
+			continue;
+
+		to_send = prepare_request();
+		bytes_to_send = 0;
+		for (i = 0; i < to_send->iov_cnt; i++)
+			bytes_to_send += to_send->iovs[i].iov_len;
+
+		start_time = time_ns();
+		ret = writev(conn->fd, to_send->iovs, to_send->iov_cnt);
+		if (ret < 0) {
+			lancet_perror("Writev failed\n");
+			return;
+		}
+		assert(ret == bytes_to_send);
+		/* Bookkeeping */
+		send_res.bytes = ret;
+		send_res.reqs = 1;
+		add_throughput_tx_sample(send_res);
+
+		assert(conn->buffer_idx == 0);
+		// lancet_fprintf(std::cerr, "Preparing sending latency tcp\n");
+		do {
+			assert(MAX_PAYLOAD - conn->buffer_idx > 0);
+			ret = recv(conn->fd, &conn->buffer[conn->buffer_idx],
+					   MAX_PAYLOAD - conn->buffer_idx, 0);
+			if (ret < 0) {
+				lancet_perror("Error read\n");
+				return;
+			}
+			if (ret == 0) {
+				close(conn->fd);
+				lancet_fprintf(std::cerr, "Connection closed\n");
+				conn->closed = 1;
+				continue;
+			}
+
+			conn->buffer_idx += ret;
+			read_res = handle_response(conn);
+			if (read_res.reqs > 0) {
+				if (get_app_proto()->type == PROTO_MEMCACHED_BIN) {
+					assert(read_res.reqs == 1);
+				}
+				end_time = time_ns();
+				/*BookKeeping*/
+				struct byte_req_pair byte_res = {read_res.bytes, read_res.reqs};
+				add_throughput_rx_sample(byte_res);
+				add_latency_sample((end_time - start_time), NULL);
+
+				/*Schedule next*/
+				next_tx += get_ia();
+			}
+		} while (conn->buffer_idx);
+	}
+}
+
+static void symmetric_nic_tcp_main(int thread_idx)
+{
+	int ready, idx, i, j, conn_per_thread, ret, bytes_to_send;
+	long next_tx;
+	std::vector<epoll_event> events;
+	struct tcp_connection *conn;
+	struct request *to_send;
+	struct consume_resp_pair read_res;
+	struct byte_req_pair send_res;
+	struct timestamp_info rx_timestamp, *tx_timestamp;
+	struct msghdr hdr;
+	struct timespec latency;
+
+	if (throughput_open_connections())
+		return;
+
+	/*Initializations*/
+	conn_per_thread = get_conn_count() / get_thread_count();
+	events.resize(conn_per_thread);
+
+	pthread_barrier_wait(&conn_open_barrier);
+	set_conn_open(1);
+
+	next_tx = time_ns();
+	while (1) {
+		if (!should_load()) {
+			next_tx = time_ns();
+			continue;
+		}
+		if (time_ns() >= next_tx) {
+			conn = pick_conn();
+			if (!conn)
+				goto REP_PROC;
+
+			to_send = prepare_request();
+			// send once
+			bytes_to_send = 0;
+			for (i = 0; i < to_send->iov_cnt; i++)
+				bytes_to_send += to_send->iovs[i].iov_len;
+
+			bzero(&hdr, sizeof(hdr));
+			hdr.msg_iov = to_send->iovs;
+			hdr.msg_iovlen = to_send->iov_cnt;
+
+			ret = sendmsg(conn->fd, &hdr, 0);
+			if ((ret < 0) && (errno != EWOULDBLOCK)) {
+				lancet_perror("Unknown connection error write\n");
+				return;
+			}
+			assert(ret == bytes_to_send);
+			add_pending_tx_timestamp(&per_conn_tx_timestamps[conn->idx],
+									 bytes_to_send);
+			conn->pending_reqs++;
+
+			/*BookKeeping*/
+			send_res.bytes = ret;
+			send_res.reqs = 1;
+			add_throughput_tx_sample(send_res);
+
+			/*Schedule next*/
+			next_tx += get_ia();
+		}
+	REP_PROC:
+		/* process responses */
+		ready = epoll_wait(epoll_fd, events.data(), conn_per_thread, 0);
+		for (i = 0; i < ready; i++) {
+			idx = events[i].data.u32;
+			conn = &connections[idx];
+			/* Handle incoming packet */
+			if (events[i].events & EPOLLIN) {
+				// read into the connection buffer
+				ret = timestamp_recv(conn->fd, &conn->buffer[conn->buffer_idx],
+									 MAX_PAYLOAD - conn->buffer_idx, 0,
+									 &rx_timestamp);
+				if ((ret < 0) && (errno != EWOULDBLOCK)) {
+					lancet_perror("Unknown connection error read\n");
+					return;
+				}
+				if (ret == 0) {
+					close(conn->fd);
+					lancet_fprintf(std::cerr, "Connection closed\n");
+					conn->closed = 1;
+					continue;
+				}
+				conn->buffer_idx += ret;
+				read_res = handle_response(conn);
+				if (read_res.reqs == 0) {
+					continue;
+				}
+
+				// assert(read_res.reqs >= 1);
+				// no need for assert because it must be true based on data type
+				conn->pending_reqs -= read_res.reqs;
+				assert(conn->pending_reqs >= 0);
+
+				/*
+				 * Assume only the last request will have an rx timestamp!
+				 */
+				for (j = 0; j < read_res.reqs; j++) {
+					tx_timestamp = pop_pending_tx_timestamps(
+						&per_conn_tx_timestamps[conn->idx]);
+					if (!tx_timestamp) {
+						ret = get_tx_timestamp(
+							conn->fd, &per_conn_tx_timestamps[conn->idx]);
+						while (ret != 1)
+							ret = get_tx_timestamp(
+								conn->fd, &per_conn_tx_timestamps[conn->idx]);
+						assert(ret == 1);
+						assert(per_conn_tx_timestamps[conn->idx].consumed <
+							   per_conn_tx_timestamps[conn->idx].tail);
+						tx_timestamp = pop_pending_tx_timestamps(
+							&per_conn_tx_timestamps[conn->idx]);
+						assert(tx_timestamp);
+					}
+				}
+				ret = timespec_diff(&latency, &rx_timestamp.time,
+									&tx_timestamp->time);
+				assert(ret == 0);
+				long diff = latency.tv_nsec + latency.tv_sec * 1e9;
+				add_latency_sample(diff, &tx_timestamp->time);
+
+				/* Bookkeepibyte_req_pairng */
+				struct byte_req_pair byte_res = {read_res.bytes, read_res.reqs};
+				add_throughput_rx_sample(byte_res);
+			} else if (events[i].events & EPOLLERR) {
+				/* Get tx timetamps */
+				get_tx_timestamp(conn->fd, &per_conn_tx_timestamps[conn->idx]);
+			} else
+				assert(0);
+
+			if ((time_ns() - next_tx) > 0)
+				break;
+		}
+	}
+}
+
+static void send_request(struct request *to_send, uint32_t fd)
+{
+	struct msghdr hdr;
+	int ret, bytes_to_send, i, current_iov_cnt;
+	current_iov_cnt = to_send->iov_cnt;
+
+	struct iovec *current_iovs = to_send->iovs;
+
+	int cumulative_bytes;
+
+	do {
+		bzero(&hdr, sizeof(hdr));
+		hdr.msg_iov = current_iovs;
+		hdr.msg_iovlen = current_iov_cnt;
+
+		bytes_to_send = 0;
+		for (i = 0; i < current_iov_cnt; i++)
+			bytes_to_send += current_iovs[i].iov_len;
+
+		ret = sendmsg(fd, &hdr, 0);
+		if ((ret < 0) && (errno != EWOULDBLOCK)) {
+			lancet_perror("Unknown connection error write\n");
+			return;
+		}
+		if (ret < bytes_to_send) {
+			i = 0;
+			cumulative_bytes = 0;
+			while (cumulative_bytes < ret) {
+				assert(i < current_iov_cnt);
+				assert(cumulative_bytes <= ret); // should never exceed ret
+
+				if (cumulative_bytes + current_iovs[i].iov_len > ret) {
+					// found, but too much
+					// set remaining bytes
+					current_iovs[i].iov_len =
+						(cumulative_bytes + current_iovs[i].iov_len) - ret;
+					current_iovs[i].iov_base =
+						current_iovs[i].iov_base + (ret - cumulative_bytes);
+					current_iovs = &current_iovs[i];
+					current_iov_cnt -= i;
+					cumulative_bytes = ret;
+				} else if (cumulative_bytes + current_iovs[i].iov_len == ret) {
+					current_iovs = &current_iovs[i + 1];
+					current_iov_cnt -= (i + 1);
+					cumulative_bytes = ret;
+				} else {
+					cumulative_bytes += current_iovs[i].iov_len;
+					i++;
+				}
+			}
+		}
+	} while (ret < bytes_to_send);
+}
+
+static void symmetric_tcp_main(int thread_idx)
+{
+	int ready, idx, i, j, conn_per_thread, ret, bytes_total;
+	long next_tx;
+	std::vector<epoll_event> events;
+	struct tcp_connection *conn;
+	struct request *to_send;
+	struct consume_resp_pair read_res;
+	struct byte_req_pair send_res;
+	struct timespec tx_timestamp, rx_timestamp, latency;
+	struct timestamp_info *pending_tx;
+
+	if (throughput_open_connections())
+		return;
+
+	/*Initializations*/
+	conn_per_thread = get_conn_count() / get_thread_count();
+	events.resize(conn_per_thread);
+
+	pthread_barrier_wait(&conn_open_barrier);
+	set_conn_open(1);
+
+	next_tx = time_ns();
+	while (1) {
+		if (!should_load()) {
+			next_tx = time_ns();
+			continue;
+		}
+		while (time_ns() >= next_tx) {
+			conn = pick_conn();
+			if (!conn)
+				goto REP_PROC;
+			to_send = prepare_request();
+
+			// send once
+			time_ns_to_ts(&tx_timestamp);
+			bytes_total = 0;
+			for (i = 0; i < to_send->iov_cnt; i++)
+				bytes_total += to_send->iovs[i].iov_len;
+			send_request(to_send, conn->fd);
+
+			push_complete_tx_timestamp(&per_conn_tx_timestamps[conn->idx],
+									   &tx_timestamp);
+			conn->pending_reqs++;
+
+			/*BookKeeping*/
+			send_res.bytes = bytes_total;
+			send_res.reqs = 1;
+			add_throughput_tx_sample(send_res);
+
+			/*Schedule next*/
+			next_tx += get_ia();
+		}
+	REP_PROC:
+		/* process responses */
+		ready = epoll_wait(epoll_fd, events.data(), conn_per_thread, 0);
+		for (i = 0; i < ready; i++) {
+			idx = events[i].data.u32;
+			conn = &connections[idx];
+			/* Handle incoming packet */
+			if (events[i].events & EPOLLIN) {
+				// read into the connection buffer
+				ret = recv(conn->fd, &conn->buffer[conn->buffer_idx],
+						   MAX_PAYLOAD - conn->buffer_idx, 0);
+				if ((ret < 0) && (errno != EWOULDBLOCK)) {
+					lancet_perror("Unknow connection error read\n");
+					return;
+				}
+				if (ret == 0) {
+					close(conn->fd);
+					lancet_fprintf(std::cerr, "Connection closed\n");
+					conn->closed = 1;
+					continue;
+				}
+				time_ns_to_ts(&rx_timestamp);
+
+				conn->buffer_idx += ret;
+				read_res = handle_response(conn);
+				if (read_res.reqs == 0)
+					continue;
+
+				// No need for assert because it's uint64
+				conn->pending_reqs -= read_res.reqs;
+				/*
+				 * Assume only the last request will have an rx timestamp!
+				 */
+				for (j = 0; j < read_res.reqs; j++) {
+					pending_tx = pop_pending_tx_timestamps(
+						&per_conn_tx_timestamps[conn->idx]);
+					if (!pending_tx) {
+						ret = get_tx_timestamp(
+							conn->fd, &per_conn_tx_timestamps[conn->idx]);
+						while (ret != 1)
+							ret = get_tx_timestamp(
+								conn->fd, &per_conn_tx_timestamps[conn->idx]);
+						assert(ret == 1);
+						assert(per_conn_tx_timestamps[conn->idx].consumed <
+							   per_conn_tx_timestamps[conn->idx].tail);
+						pending_tx = pop_pending_tx_timestamps(
+							&per_conn_tx_timestamps[conn->idx]);
+						assert(pending_tx);
+					}
+				}
+				ret = timespec_diff(&latency, &rx_timestamp, &pending_tx->time);
+				assert(ret == 0);
+				long diff = latency.tv_nsec + latency.tv_sec * 1e9;
+				add_latency_sample(diff, &pending_tx->time);
+
+				/* Bookkeeping */
+				struct byte_req_pair byte_res = {read_res.bytes, read_res.reqs};
+				add_throughput_rx_sample(byte_res);
+			} else
+				assert(0);
+		}
+	}
+}
+
+static void symmetric_mapping_tcp_main(int thread_idx)
+{
+	int ready, idx, i, j, conn_per_thread, ret, bytes_total;
+	long next_tx;
+	std::vector<epoll_event> events;
+	struct tcp_connection *conn;
+	struct request *to_send;
+	struct consume_resp_pair read_res;
+	struct byte_req_pair send_res;
+	struct timespec tx_timestamp, rx_timestamp, latency;
+	struct timestamp_info *pending_tx;
+
+	if (throughput_open_connections())
+		return;
+
+	/*Initializations*/
+	conn_per_thread = get_conn_count() / get_thread_count();
+	events.resize(conn_per_thread);
+
+	pthread_barrier_wait(&conn_open_barrier);
+	set_conn_open(1);
+
+	next_tx = time_ns();
+	while (1) {
+		if (!should_load()) {
+			next_tx = time_ns();
+			continue;
+		}
+		while (time_ns() >= next_tx) {
+			conn = pick_conn();
+			if (!conn)
+				goto REP_PROC;
+			to_send = prepare_request_id(conn->rpc_id);
+			conn->rpc_id++;
+
+			// send once
+			time_ns_to_ts(&tx_timestamp);
+			bytes_total = 0;
+			for (i = 0; i < to_send->iov_cnt; i++)
+				bytes_total += to_send->iovs[i].iov_len;
+			send_request(to_send, conn->fd);
+
+			push_tx_timestamp_map(to_send->id,
+								  per_conn_tx_timestamps_map[conn->idx],
+								  &tx_timestamp);
+
+			conn->pending_reqs++;
+
+			/*BookKeeping*/
+			send_res.bytes = bytes_total;
+			send_res.reqs = 1;
+			add_throughput_tx_sample(send_res);
+
+			/*Schedule next*/
+			next_tx += get_ia();
+		}
+	REP_PROC:
+		/* process responses */
+		ready = epoll_wait(epoll_fd, events.data(), conn_per_thread, 0);
+		for (i = 0; i < ready; i++) {
+			idx = events[i].data.u32;
+			conn = &connections[idx];
+			/* Handle incoming packet */
+			if (events[i].events & EPOLLIN) {
+				// read into the connection buffer
+				ret = recv(conn->fd, &conn->buffer[conn->buffer_idx],
+						   MAX_PAYLOAD - conn->buffer_idx, 0);
+				if ((ret < 0) && (errno != EWOULDBLOCK)) {
+					lancet_perror("Unknow connection error read\n");
+					return;
+				}
+				if (ret == 0) {
+					close(conn->fd);
+					lancet_fprintf(std::cerr, "Connection closed\n");
+					conn->closed = 1;
+					continue;
+				}
+
+				// record cur time for reponse receiving
+				time_ns_to_ts(&rx_timestamp);
+
+				conn->buffer_idx += ret;
+				read_res = handle_response(conn);
+				if (read_res.reqs == 0)
+					continue;
+
+				// No need for assert because it's uint64
+				conn->pending_reqs -= read_res.reqs;
+				for (j = 0; j < read_res.reqs; j++) {
+					pending_tx = pop_pending_tx_timestamps_map(
+						read_res.ids->at(j),
+						per_conn_tx_timestamps_map[conn->idx]);
+
+					// lancet_fprintf(
+					// std::cerr,
+					//"receiving response with memcache-id is %u\n",
+					// read_res.ids->at(j));
+					// lancet_fprintf(std::cerr, "response at %ld, %ld\n",
+					// rx_timestamp.tv_sec, rx_timestamp.tv_nsec);
+					// lancet_fprintf(std::cerr, "response at %ld, %ld\n",
+					// rx_timestamp.tv_sec, rx_timestamp.tv_nsec);
+
+					ret = timespec_diff(&latency, &rx_timestamp,
+										&pending_tx->time);
+					assert(ret == 0);
+					long diff = latency.tv_nsec + latency.tv_sec * 1e9;
+					if (diff < 0) {
+						lancet_fprintf(std::cerr, "request %u at %ld, %ld\n",
+									   read_res.ids->at(j),
+									   pending_tx->time.tv_sec,
+									   pending_tx->time.tv_nsec);
+						lancet_fprintf(std::cerr, "response %u at %ld, %ld\n",
+									   read_res.ids->at(j), rx_timestamp.tv_sec,
+									   rx_timestamp.tv_nsec);
+					}
+					add_latency_sample(diff, &pending_tx->time);
+				}
+
+				/* Bookkeeping */
+				struct byte_req_pair byte_res = {read_res.bytes, read_res.reqs};
+				add_throughput_rx_sample(byte_res);
+
+				// free read_res->ids
+				delete read_res.ids;
+				read_res.ids = nullptr;
+			} else
+				assert(0);
+		}
+	}
+}
+
+// this should contain all the logic for partial responses
+// so that BOTH the throughput and latency cases handle this correctly
+struct consume_resp_pair handle_response(struct tcp_connection *conn)
+{
+	struct consume_resp_pair brp;
+	uint64_t brp_bytes;
+
+	brp = process_response(conn->buffer, conn->buffer_idx);
+	brp_bytes = brp.bytes;
+
+	if (brp_bytes == 0) {
+		assert(brp.reqs == 0);
+		if (conn->buffer_idx == MAX_PAYLOAD) {
+			lancet_fprintf(std::cerr,
+						   "partial request processed beyond max "
+						   "buffer size (%d). Need to make smaller "
+						   "requests or increase MAX_PAYLOAD.\n",
+						   MAX_PAYLOAD);
+			assert(0);
+		}
+		return brp;
+	} else if (brp_bytes == conn->buffer_idx) {
+		// consumed the whole response
+		conn->buffer_idx = 0;
+	} else if (brp_bytes > 0 && brp_bytes < conn->buffer_idx) {
+		size_t leftover_bytes = conn->buffer_idx - brp_bytes;
+		assert(leftover_bytes < MAX_PAYLOAD);
+		memmove(conn->buffer, &conn->buffer[brp_bytes], leftover_bytes);
+		conn->buffer_idx = leftover_bytes;
+	} else {
+		lancet_fprintf(std::cerr,
+					   "got a strange amount of response bytes (%lu) "
+					   "from total bytes (%d)",
+					   brp_bytes, conn->buffer_idx);
+		assert(0);
+	}
+	assert(brp.reqs > 0);
+	return brp;
+}
+
+struct transport_protocol *init_tcp(void)
+{
+	struct transport_protocol *tp;
+	tp = new struct transport_protocol;
+	lancet_fprintf(std::cerr, "Successfully alloc transport protocol\n");
+	if (!tp) {
+		lancet_fprintf(std::cerr, "Failed to alloc transport_protocol\n");
+		return NULL;
+	}
+
+	tp->tp_main[THROUGHPUT_AGENT] = throughput_tcp_main;
+	tp->tp_main[LATENCY_AGENT] = latency_tcp_main;
+	tp->tp_main[SYMMETRIC_NIC_TIMESTAMP_AGENT] = symmetric_nic_tcp_main;
+	tp->tp_main[SYMMETRIC_AGENT] = symmetric_tcp_main;
+	tp->tp_main[SYMMETRIC_MAPPING_AGENT] = symmetric_mapping_tcp_main;
+
+	return tp;
+}

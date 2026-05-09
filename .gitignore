@@ -1,0 +1,66 @@
+# Generated experiment outputs
+/logs/
+
+# Build outputs
+*.a
+*.aux
+*.bin
+*.cmd
+*.ko
+*.log
+*.o
+*.out
+*.so
+
+# Kernel/module build byproducts
+/koma/**/*.mod
+Module.symvers
+modules.order
+compile_commands.json
+
+# Python and tool caches
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Benchmark/profile outputs generated inside imported sources
+/bench/build/
+/bench/perf/*.txt
+/bench/perf/*.out
+/bench/perf/*.pdf
+/bench/perf/*.svg
+/bench/perf/*_NUM_GOROUTINES/
+/bench/perf/goroutines_*.log
+
+# Benchmark server binaries rebuilt from source
+/bench/servers/*.d
+/bench/servers/spin-grpc-go
+/bench/servers/silo-grpc-go
+/bench/servers/spin-linux
+/bench/servers/spin-linux-pool
+/bench/servers/spin-linux-pool-tls
+/bench/servers/spin-linux-tls
+/bench/servers/spin-kcm
+/bench/servers/spin-koma
+/bench/servers/spin-koma-tls
+/bench/servers/silo-linux
+/bench/servers/silo-linux-pool
+/bench/servers/silo-linux-pool-tls
+/bench/servers/silo-linux-tls
+/bench/servers/silo-kcm
+/bench/servers/silo-koma
+/bench/servers/silo-koma-tls
+/bench/servers/cmake/build/
+
+# Lancet binaries rebuilt from source
+/third_party/lancet-cplusplus/agents/build/
+/third_party/lancet-cplusplus/agents/go_bridge/go_bridge
+/third_party/lancet-cplusplus/bin/native-etcd-preload
+
+# Example binaries rebuilt from imported Koma sources
+/koma/**/servers/grpc-server/client/client
+/koma/**/servers/grpc-server/server/server
+/koma/**/servers/grpc-server/concurrent_client/concurrent_client
+
+# plot
+/bench/plot/out/

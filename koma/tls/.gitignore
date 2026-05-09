@@ -1,0 +1,11 @@
+*.o
+*.ko
+*.mod
+*.cmd
+*.symvers
+*.mod.c 
+*.order
+.cache/
+compile_commands.json
+*.svg
+*.png

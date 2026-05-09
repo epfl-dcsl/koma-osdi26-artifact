@@ -1,0 +1,171 @@
+\usepackage[english]{babel}
+\usepackage{xspace}
+\IfFileExists{caption.sty}{\usepackage{caption}}{\newcommand{\captionsetup}[2][]{}}%
+\IfFileExists{subcaption.sty}{\usepackage{subcaption}}{}%
+\IfFileExists{siunitx.sty}{\usepackage{siunitx}}{\newcommand{\si}[1]{##1}}%
+\IfFileExists{xstring.sty}{\usepackage{xstring}}{%
+  \newcommand{\IfStrEq}[4]{%
+    \ifnum\pdfstrcmp{##1}{##2}=0
+      ##3%
+    \else
+      ##4%
+    \fi
+  }%
+}%
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+
+\usetikzlibrary{calc,shapes,arrows.meta,decorations.markings}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{fadings}
+\usepgfplotslibrary{fillbetween,groupplots,statistics}
+\pgfplotsset{compat=1.18}
+
+\newcommand{\eg}{\textit{e.g.,}\xspace}
+\newcommand{\ie}{\textit{i.e.,}\xspace}
+\newcommand{\etc}{\textit{etc.}\xspace}
+\newcommand{\microsecond}{\ensuremath{\mu}s\xspace}
+\newcommand{\nineninepct}{$99^{th}$ percentile\xspace}
+\newcommand{\system}{\textsf{Koma}\xspace}
+\newcommand{\add}[1]{#1}
+\newcommand{\del}[1]{}
+\newcommand{\fakeautoref}[1]{#1}
+
+\makeatletter
+\@ifundefined{subfigure}{%
+  \newenvironment{subfigure}[2][c]{%
+    \begin{minipage}[##1]{##2}%
+    \centering
+    \renewcommand{\caption}[1]{\par\small ##1\par}%
+  }{%
+    \end{minipage}%
+  }%
+}{}
+\makeatother
+
+\definecolor{cLightRed}{HTML}{E74C3C}
+\definecolor{cRed}{HTML}{C0392B}
+\definecolor{cBlue}{HTML}{2980B9}
+\definecolor{cLightBlue}{HTML}{3498DB}
+\definecolor{cDarkBlue}{HTML}{10334A}
+\definecolor{cGreen}{HTML}{27AE60}
+\definecolor{cLightGreen}{HTML}{2ECC71}
+\definecolor{cViolet}{HTML}{8E44AD}
+\definecolor{cLightViolet}{HTML}{9B59B6}
+\definecolor{cOrange}{HTML}{D35400}
+\definecolor{cLightOrange}{HTML}{E67E22}
+\definecolor{cYellow}{HTML}{F39C12}
+\definecolor{cLightYellow}{HTML}{F1C40F}
+\definecolor{cLightPurple}{HTML}{FF95CA}
+\definecolor{cRedish}{HTML}{FF644E}
+\definecolor{cCyan}{HTML}{16E7CF}
+\definecolor{cBrightGreen}{HTML}{61D836}
+\definecolor{autorefcolor}{RGB}{1,204,0}
+
+\DeclareUnicodeCharacter{03BC}{\ensuremath{\mu}}
+
+\newcommand*\emptycirc[1][3pt]{\tikz[baseline=-0.5ex] \draw (0,0) circle (#1);}
+\newcommand*\halfcirc[1][3pt]{%
+  \begin{tikzpicture}
+  \draw[fill] (0,0)-- (0:#1) arc (0:90:#1) -- cycle;
+  \draw[fill] (0,0)-- (270:#1) arc (270:360:#1) -- cycle;
+  \draw (0,0) circle (#1);
+  \end{tikzpicture}}
+\newcommand*\fullcirc[1][3pt]{\tikz[baseline=-0.5ex] \fill (0,0) circle (#1);}
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+
+\pgfplotsset{
+  /pgfplots/evaluation line legend/.style 2 args={
+    legend image code/.code={
+      \draw[#2] (0mm, 1.5mm) rectangle (3mm, -1.5mm);
+      \draw[#1] (0mm, 0mm) -- (3mm, 0mm);
+    }
+  }
+}
+
+\pgfplotsset{
+    komaStyle/.style={
+        mark=triangle*,
+        mark size=1.5pt,
+        ultra thick,
+        cBlue!90,
+        solid,
+        mark options={scale=1, fill=cGreen}
+    },
+    koma_tlsStyle/.style={
+        mark=triangle*,
+        mark size=1.5pt,
+        ultra thick,
+        cLightBlue!50,
+        solid,
+        mark options={scale=1, fill=cGreen}
+    },
+    partitionStyle/.style={
+        mark=triangle*,
+        mark size=1.5pt,
+        ultra thick,
+        cOrange!90,
+        solid,
+        mark options={scale=1, fill=cOrange}
+    },
+    floatingStyle/.style={
+        mark=triangle*,
+        mark size=1.5pt,
+        ultra thick,
+        cGreen!90,
+        solid,
+        mark options={scale=1, fill=cBlue}
+    },
+    floating_tlsStyle/.style={
+        mark=triangle*,
+        mark size=1.5pt,
+        ultra thick,
+        cLightGreen!50,
+        solid,
+        mark options={scale=1, fill=cBlue}
+    },
+    kcmStyle/.style={
+        mark=triangle*,
+        mark size=1.5pt,
+        ultra thick,
+        cYellow!90,
+        solid,
+        mark options={scale=1, fill=cYellow}
+    },
+    grpc_komaStyle/.style={
+      mark=triangle*,
+      mark size=1.5pt,
+      ultra thick,
+      cViolet!90,
+      solid,
+      mark options={scale=1, fill=., solid}
+    },
+    grpc_vanillaStyle/.style={
+      mark=triangle*,
+      mark size=1.5pt,
+      ultra thick,
+      cLightPurple!90,
+      solid,
+      mark options={scale=1, fill=., solid}
+    },
+    workerPoolStyle/.style={
+      mark=triangle*,
+      mark size=1.5pt,
+      ultra thick,
+      cLightPurple,
+      solid,
+      mark options={scale=1, fill=cViolet}
+    },
+    workerPool_tlsStyle/.style={
+      mark=triangle*,
+      mark size=1.5pt,
+      ultra thick,
+      cLightPurple!50,
+      solid,
+      mark options={scale=1, fill=cViolet}
+    }
+}
+
+\pgfplotsset{scaled y ticks=false}

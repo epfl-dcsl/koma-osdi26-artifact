@@ -1,0 +1,275 @@
+\newread\synthetictwentyusfile%
+
+\newcommand{\IfNonemptySyntheticTwentyUsFile}[3]{%
+    \IfFileExists{#1}{%
+        \openin\synthetictwentyusfile=#1
+        \ifeof\synthetictwentyusfile%
+            \closein\synthetictwentyusfile%
+            #3%
+        \else
+            \closein\synthetictwentyusfile%
+            #2%
+        \fi
+    }{%
+        #3%
+    }%
+}
+
+\newcommand{\SyntheticTwentyUsPlot}[3]{%
+    \IfNonemptySyntheticTwentyUsFile{#3}{%
+        \addplot+[#1]
+        table [#2, col sep=comma] {#3};
+    }{}%
+}
+
+\newcommand{\SyntheticTwentyUsSchedsimPlot}[1]{%
+    \SyntheticTwentyUsPlot{mark=none, solid, cLightBlue}{x expr=\thisrow{Req/time_unit} * 50000, y expr=\thisrow{99th (us)} / 50}{data/schedsim/single_queue/FIFO_1000_20_80_#1.csv}%
+}
+
+\newcommand{\SyntheticTwentyUsYAxisStyle}{%
+    scaled y ticks=false,
+    ytick={200, 400, 600, 800, 1000},
+    yticklabel style={
+        /pgf/number format/fixed,
+        /pgf/number format/precision=0,
+    }%
+}
+
+\newcommand{\SyntheticTwentyUsPanelWidth}{5.69cm}
+
+\begin{figure*}[!t]
+    \centering
+    \captionsetup[subfigure]{justification=centering,singlelinecheck=false,width=\SyntheticTwentyUsPanelWidth}
+    \begin{subfigure}[b]{\SyntheticTwentyUsPanelWidth}
+        \centering
+        \begin{tikzpicture} [scale=0.875, transform shape, trim axis left, trim axis right]
+            \begin{axis}
+                [
+                    xlabel={Load (KQPS)},
+                    ylabel={Latency (\si{\micro\second})},
+                    xmin=0,
+                    xmax=640,
+                    ymin=0,
+                    ymax=1000,
+                    enlarge y limits=false,
+                    restrict x to domain*=0:5E9,
+                    restrict y to domain*=0:1E4,
+                    \SyntheticTwentyUsYAxisStyle,
+                    axis y line=left,
+                    axis x line=bottom,
+                    height=3.9cm,
+                    width=6.5cm,
+                    legend cell align=left,
+                    legend style={
+                        draw=none,
+                        font=\footnotesize,
+                        anchor=south,
+                        at={(0.95, 1.15)},
+                        legend columns=2,
+                        /tikz/every even column/.append style={column sep=0.7cm},
+                    },
+                ]
+                \addlegendimage{partitionStyle}
+                \addlegendentry{TCP-CP-80}
+
+                \addlegendimage{kcmStyle}
+                \addlegendentry{KCM}
+
+                \SyntheticTwentyUsPlot{
+                    workerPoolStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_pool(QPS)} / 1000, y=latency_pool}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    partitionStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_partition(QPS)} / 1000, y=latency_partition}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    floatingStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_floating(QPS)} / 1000, y=latency_floating}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    kcmStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_kcm_floating(QPS)} / 1000, y=latency_kcm_floating}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    komaStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsSchedsimPlot{d}
+            \end{axis}
+        \end{tikzpicture}
+        \caption{\add{Fixed (80 connections).}}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{\SyntheticTwentyUsPanelWidth}
+        \centering
+        \begin{tikzpicture} [scale=0.875, transform shape, trim axis left, trim axis right]
+            \begin{axis}
+                [
+                    xlabel={Load (KQPS)},
+                    ylabel style={opacity=0},
+                    ylabel={\phantom{Latency}},
+                    xmin=0,
+                    xmax=640,
+                    ymin=0,
+                    ymax=1000,
+                    enlarge y limits=false,
+                    restrict x to domain*=0:5E9,
+                    restrict y to domain*=0:1E4,
+                    \SyntheticTwentyUsYAxisStyle,
+                    axis y line=left,
+                    axis x line=bottom,
+                    height=3.9cm,
+                    width=6.5cm,
+                    legend cell align=left,
+                    legend style={
+                        draw=none,
+                        font=\footnotesize,
+                        anchor=south,
+                        at={(0.60, 1.15)},
+                        legend columns=2,
+                        /tikz/every even column/.append style={column sep=0.7cm},
+                    },
+                ]
+                \addlegendimage{floatingStyle}
+                \addlegendentry{TCP-CS-80}
+
+                \addlegendimage{workerPoolStyle}
+                \addlegendentry{Worker Pool}
+
+                \SyntheticTwentyUsPlot{
+                    workerPoolStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_pool(QPS)} / 1000, y=latency_pool}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    komaStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    partitionStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_partition(QPS)} / 1000, y=latency_partition}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    floatingStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_floating(QPS)} / 1000, y=latency_floating}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    kcmStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_kcm_floating(QPS)} / 1000, y=latency_kcm_floating}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsSchedsimPlot{m}
+            \end{axis}
+        \end{tikzpicture}
+        \caption{\add{Exponential (80 connections).}}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{\SyntheticTwentyUsPanelWidth}
+        \centering
+        \begin{tikzpicture} [scale=0.875, transform shape, trim axis left, trim axis right]
+            \begin{axis}
+                [
+                    xlabel={Load (KQPS)},
+                    ylabel style={opacity=0},
+                    ylabel={\phantom{Latency}},
+                    xmin=0,
+                    xmax=640,
+                    ymin=0,
+                    ymax=1000,
+                    enlarge y limits=false,
+                    restrict x to domain*=0:5E9,
+                    restrict y to domain*=0:1E4,
+                    \SyntheticTwentyUsYAxisStyle,
+                    axis y line=left,
+                    axis x line=bottom,
+                    height=3.9cm,
+                    width=6.5cm,
+                    legend cell align=left,
+                    legend style={
+                        draw=none,
+                        font=\footnotesize,
+                        anchor=south,
+                        at={(0.20, 1.15)},
+                        legend columns=2,
+                        /tikz/every even column/.append style={column sep=0.7cm},
+                    },
+                ]
+                \addlegendimage{komaStyle}
+                \addlegendentry{\system}
+
+                \addlegendimage{mark=none, solid, cLightBlue}
+                \addlegendentry{MS}
+
+                \SyntheticTwentyUsPlot{
+                    workerPoolStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_pool(QPS)} / 1000, y=latency_pool}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    komaStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    partitionStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_partition(QPS)} / 1000, y=latency_partition}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    floatingStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_floating(QPS)} / 1000, y=latency_floating}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsPlot{
+                    kcmStyle,
+                    x filter/.code={
+                        \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
+                    }
+                }{x expr=\thisrow{load_kcm_floating(QPS)} / 1000, y=latency_kcm_floating}{data/synthetic_80_20us.csv}
+
+                \SyntheticTwentyUsSchedsimPlot{b}
+            \end{axis}
+        \end{tikzpicture}
+        \caption{\add{Bimodal (80 connections).}}
+    \end{subfigure}
+    \caption{\add{\nineninepct{} latency as a function of throughput for 20\si{\micro\second} tasks with 80 client connections.
+    Panels correspond to fixed, exponential, and bimodal service time distributions.}}\label{fig:synthetic_20us}
+    \vspace{-0.5em}
+\end{figure*}

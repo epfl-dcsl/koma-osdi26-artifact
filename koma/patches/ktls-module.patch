@@ -1,0 +1,178 @@
+diff --git a/net/tls/tls_sw.c b/net/tls/tls_sw.c
+index 211f57164..1d0692cf1 100644
+--- a/net/tls/tls_sw.c
++++ b/net/tls/tls_sw.c
+@@ -854,7 +854,7 @@ static int bpf_exec_tx_verdict(struct sk_msg *msg, struct sock *sk,
+ 	u32 delta = 0;
+ 
+ 	policy = !(flags & MSG_SENDPAGE_NOPOLICY);
+-	psock = sk_psock_get(sk);
++	psock = NULL;
+ 	if (!psock || !policy) {
+ 		err = tls_push_record(sk, flags, record_type);
+ 		if (err && err != -EINPROGRESS && sk->sk_err == EBADMSG) {
+@@ -1317,8 +1317,8 @@ tls_rx_rec_wait(struct sock *sk, struct sk_psock *psock, bool nonblock,
+ 	timeo = sock_rcvtimeo(sk, nonblock);
+ 
+ 	while (!tls_strp_msg_ready(ctx)) {
+-		if (!sk_psock_queue_empty(psock))
+-			return 0;
++		// if (!sk_psock_queue_empty(psock))
++		// 	return 0;
+ 
+ 		if (sk->sk_err)
+ 			return sock_error(sk);
+@@ -1345,8 +1345,8 @@ tls_rx_rec_wait(struct sock *sk, struct sk_psock *psock, bool nonblock,
+ 		add_wait_queue(sk_sleep(sk), &wait);
+ 		sk_set_bit(SOCKWQ_ASYNC_WAITDATA, sk);
+ 		ret = sk_wait_event(sk, &timeo,
+-				    tls_strp_msg_ready(ctx) ||
+-				    !sk_psock_queue_empty(psock),
++				    tls_strp_msg_ready(ctx),
++					// || !sk_psock_queue_empty(psock),
+ 				    &wait);
+ 		sk_clear_bit(SOCKWQ_ASYNC_WAITDATA, sk);
+ 		remove_wait_queue(sk_sleep(sk), &wait);
+@@ -1976,11 +1976,11 @@ int tls_sw_recvmsg(struct sock *sk,
+ 	if (unlikely(flags & MSG_ERRQUEUE))
+ 		return sock_recv_errqueue(sk, msg, len, SOL_IP, IP_RECVERR);
+ 
+-	psock = sk_psock_get(sk);
++	// psock = sk_psock_get(sk);
+ 	err = tls_rx_reader_lock(sk, ctx, flags & MSG_DONTWAIT);
+ 	if (err < 0)
+ 		return err;
+-	bpf_strp_enabled = sk_psock_strp_enabled(psock);
++	// bpf_strp_enabled = sk_psock_strp_enabled(psock);
+ 
+ 	/* If crypto failed the connection is broken */
+ 	err = ctx->async_wait.err;
+@@ -2009,15 +2009,15 @@ int tls_sw_recvmsg(struct sock *sk,
+ 		err = tls_rx_rec_wait(sk, psock, flags & MSG_DONTWAIT,
+ 				      released);
+ 		if (err <= 0) {
+-			if (psock) {
+-				chunk = sk_msg_recvmsg(sk, psock, msg, len,
+-						       flags);
+-				if (chunk > 0) {
+-					decrypted += chunk;
+-					len -= chunk;
+-					continue;
+-				}
+-			}
++			// if (psock) {
++			// 	chunk = sk_msg_recvmsg(sk, psock, msg, len,
++			// 			       flags);
++			// 	if (chunk > 0) {
++			// 		decrypted += chunk;
++			// 		len -= chunk;
++			// 		continue;
++			// 	}
++			// }
+ 			goto recv_end;
+ 		}
+ 
+@@ -2091,17 +2091,17 @@ int tls_sw_recvmsg(struct sock *sk,
+ 				continue;
+ 			}
+ 
+-			if (bpf_strp_enabled) {
+-				released = true;
+-				err = sk_psock_tls_strp_read(psock, skb);
+-				if (err != __SK_PASS) {
+-					rxm->offset = rxm->offset + rxm->full_len;
+-					rxm->full_len = 0;
+-					if (err == __SK_DROP)
+-						consume_skb(skb);
+-					continue;
+-				}
+-			}
++			// if (bpf_strp_enabled) {
++			// 	released = true;
++			// 	err = sk_psock_tls_strp_read(psock, skb);
++			// 	if (err != __SK_PASS) {
++			// 		rxm->offset = rxm->offset + rxm->full_len;
++			// 		rxm->full_len = 0;
++			// 		if (err == __SK_DROP)
++			// 			consume_skb(skb);
++			// 		continue;
++			// 	}
++			// }
+ 
+ 			if (partially_consumed)
+ 				chunk = len;
+@@ -2164,8 +2164,8 @@ int tls_sw_recvmsg(struct sock *sk,
+ 
+ end:
+ 	tls_rx_reader_unlock(sk, ctx);
+-	if (psock)
+-		sk_psock_put(sk, psock);
++	// if (psock)
++	// 	sk_psock_put(sk, psock);
+ 	return copied ? : err;
+ }
+ 
+@@ -2256,14 +2256,15 @@ int tls_sw_read_sock(struct sock *sk, read_descriptor_t *desc,
+ 	ssize_t decrypted;
+ 	int err, used;
+ 
+-	psock = sk_psock_get(sk);
+-	if (psock) {
+-		sk_psock_put(sk, psock);
+-		return -EINVAL;
+-	}
+-	err = tls_rx_reader_acquire(sk, ctx, true);
+-	if (err < 0)
+-		return err;
++	// psock = sk_psock_get(sk);
++	// if (psock) {
++	// 	sk_psock_put(sk, psock);
++	// 	return -EINVAL;
++	// }
++
++	// err = tls_rx_reader_acquire(sk, ctx, true);
++	// if (err < 0)
++	// 	return err;
+ 
+ 	/* If crypto failed the connection is broken */
+ 	err = ctx->async_wait.err;
+@@ -2284,6 +2285,7 @@ int tls_sw_read_sock(struct sock *sk, read_descriptor_t *desc,
+ 				goto read_sock_end;
+ 
+ 			memset(&darg.inargs, 0, sizeof(darg.inargs));
++			darg.async = true;
+ 
+ 			err = tls_rx_one_record(sk, NULL, &darg);
+ 			if (err < 0) {
+@@ -2344,9 +2346,9 @@ bool tls_sw_sock_is_readable(struct sock *sk)
+ 	struct sk_psock *psock;
+ 
+ 	rcu_read_lock();
+-	psock = sk_psock(sk);
+-	if (psock)
+-		ingress_empty = list_empty(&psock->ingress_msg);
++	// psock = sk_psock(sk);
++	// if (psock)
++	// 	ingress_empty = list_empty(&psock->ingress_msg);
+ 	rcu_read_unlock();
+ 
+ 	return !ingress_empty || tls_strp_msg_ready(ctx) ||
+@@ -2435,12 +2437,12 @@ static void tls_data_ready(struct sock *sk)
+ 	tls_strp_data_ready(&ctx->strp);
+ 	sk->sk_allocation = alloc_save;
+ 
+-	psock = sk_psock_get(sk);
+-	if (psock) {
+-		if (!list_empty(&psock->ingress_msg))
+-			ctx->saved_data_ready(sk);
+-		sk_psock_put(sk, psock);
+-	}
++	// psock = sk_psock_get(sk);
++	// if (psock) {
++	// 	if (!list_empty(&psock->ingress_msg))
++	// 		ctx->saved_data_ready(sk);
++	// 	sk_psock_put(sk, psock);
++	// }
+ }
+ 
+ void tls_sw_cancel_work_tx(struct tls_context *tls_ctx)

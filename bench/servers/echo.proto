@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package echo;
+
+// Add this line:
+option go_package = "proto.com";
+
+message EchoRequest {
+  string message = 1;
+}
+
+message EchoResponse {
+  string message = 1;
+}
+
+service Echo {
+  rpc SendEcho (EchoRequest) returns (EchoResponse) {}
+}
