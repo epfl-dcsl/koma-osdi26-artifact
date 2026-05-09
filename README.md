@@ -5,6 +5,50 @@ Koma kernel-module sources (three variants: plain TCP, gRPC, kTLS), a
 benchmark harness driven by Fabric, and the third-party tools needed to
 reproduce the paper's performance figures on a CloudLab allocation.
 
+## Quickstart
+
+End-to-end smoke test on a CloudLab allocation: patch the kernel, build
+everything, run the smallest TCP experiment, and render its figure. All
+commands run on the **driver** machine (your laptop or a CloudLab
+jumpbox); the harness ssh's into the cluster from there. See the
+[Hardware](#hardware) section for the host roles this assumes.
+
+```bash
+# 1. Clone and create the driver venv.
+git clone <this-artifact-url> ~/koma-osdi
+cd ~/koma-osdi
+python3 -m venv .fab-venv
+.fab-venv/bin/pip install -r bench/requirements.txt
+
+# 2. Point the harness at your allocation. See "Configure your
+#    allocation" for every variable; these six are the minimum.
+export KOMA_OSDI_REMOTE_USER=<cloudlab-user>
+export KOMA_OSDI_SSH_KEY=$HOME/.ssh/id_rsa_cloudlab
+export KOMA_OSDI_SERVER=<server-fqdn>
+export KOMA_OSDI_COORDINATOR=<coord-fqdn>
+export KOMA_OSDI_SYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>
+export KOMA_OSDI_ASYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>
+
+# 3. Patch and install the 6.8.0-koma kernel; the server reboots.
+bench/fabs/run_all.sh --patch-kernel
+
+# 4. Build koma modules + benchmark servers, deploy Lancet to clients.
+bench/fabs/run_all.sh --setup
+
+# 5. Run the smallest TCP experiment (~Figure 8 input).
+bench/fabs/run_all.sh --experiments vanilla20-Conn80
+
+# 6. Render the matching figure.
+python3 bench/plot/render.py synthetic_20us
+```
+
+Once that loop succeeds, swap step 5 for the experiments listed in
+[What this artifact reproduces](#what-this-artifact-reproduces) and step 6
+for the corresponding plotter name (`synthetic_100us`, `synthetic_grpc`,
+`ktls_eval`, `silo`), or run `--experiments all` to drive the whole
+matrix. The rest of this document is the deep-dive reference for each
+step.
+
 ## What this artifact reproduces
 
 | Paper output          | Driver task(s)                                                                     | Result directory(ies) under `results/`                                                                  |
