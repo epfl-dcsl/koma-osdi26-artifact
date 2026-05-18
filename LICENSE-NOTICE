@@ -1,0 +1,36 @@
+Koma OSDI Artifact License Notice
+
+This repository is distributed as a multi-license research artifact for
+reproducing and comparing the results of the OSDI'26 paper "Koma:
+Achieving Low Tail Latency with In-Kernel Message-Oriented Scheduling".
+
+Unless a file or directory states a more specific license, the
+artifact-authored material in this repository is licensed under the GNU
+General Public License version 2 only (GPL-2.0-only). This default covers
+the top-level artifact documentation, benchmark orchestration scripts,
+experiment configuration, plotting code, and other Koma-authored support
+files that do not carry their own license notice.
+
+More-specific notices take precedence over this default. In particular:
+
+- The Koma kernel-module sources under `koma/plain-tcp/`, `koma/grpc/`,
+  and `koma/tls/` are marked `GPL-2.0-only` with SPDX identifiers.
+- Kernel patch material under `koma/patches/` follows the license stated
+  in the patched source or added file header, including
+  `GPL-2.0 WITH Linux-syscall-note` where marked.
+- Bundled third-party components retain their upstream licenses and
+  copyright notices. Notable examples include:
+  - `third_party/lancet-cplusplus/`: MIT License; see
+    `third_party/lancet-cplusplus/LICENSE`.
+  - `third_party/FlameGraph/`: CDDL-1.0 and per-file upstream notices.
+  - `bench/servers/silo/`: MIT License; see `bench/servers/silo/LICENSE`.
+  - `bench/servers/silo/masstree/`: MIT-style license with an additional
+    publicity clause; see `bench/servers/silo/masstree/LICENSE`.
+  - `bench/servers/silo/third-party/lz4/`: BSD-2-Clause for library
+    sources and GPL-2.0-or-later for command-line/test utilities, as
+    indicated in the corresponding files.
+
+For artifact evaluation, reproduction, and comparison, users may use, copy,
+modify, and redistribute the artifact under the applicable terms above.
+This notice does not remove or replace any file-level SPDX identifier,
+bundled third-party license, copyright notice, or attribution requirement.

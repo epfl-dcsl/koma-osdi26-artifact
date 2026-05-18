@@ -313,6 +313,15 @@ Additional input-mapping details live in
 | `bench/fabs/`              | Fabric tasks plus the `run_all.sh` orchestration entry point.             |
 | `third_party/`             | `lancet-cplusplus`, `schedsim`, `FlameGraph` (pinned).                    |
 
+## License
+
+This artifact is distributed as a multi-license aggregate. Koma-authored
+files without a more specific notice are licensed under GPL-2.0-only; the
+Koma kernel-module sources carry GPL-2.0-only SPDX headers, and bundled
+third-party components retain their upstream licenses. See
+[`LICENSE`](LICENSE) for the full GPL-2.0 text and
+[`LICENSE-NOTICE`](LICENSE-NOTICE) for the multi-license aggregation notice.
+
 ## Environment variable reference
 
 Cluster (consumed by `fab_config.py`):
