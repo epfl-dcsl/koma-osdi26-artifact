@@ -195,9 +195,9 @@ class ExperimentRun(object):
     def ensure_project_repo(self, conn: Connection):
         self.ensure_repo(conn, self.dirs.project_repo_url, self.dirs.proj_dir, recursive=True)
 
-    def _configure_server_grpc_go_mod(self, use_koma: bool):
+    def _configure_server_grpc_go_mod(self, use_rakaia: bool):
         replace_lines: list[str] = []
-        if use_koma:
+        if use_rakaia:
             replace_lines = [
                 "replace google.golang.org/grpc => {} {}".format(
                     self.dirs.grpc_go_module_url,
@@ -306,7 +306,7 @@ class ExperimentRun(object):
         package_list = " ".join(shlex.quote(pkg) for pkg in packages)
         conn.run("sudo DEBIAN_FRONTEND=noninteractive apt-get install -y {}".format(package_list))
 
-    def patch_cloudlab_koma_kernel(self):
+    def patch_cloudlab_rakaia_kernel(self):
         self.server_conn.run("sudo apt-get update")
         self.server_conn.run(
             "sudo apt-get install -y build-essential bc cpio rsync git wget ca-certificates "
@@ -330,9 +330,9 @@ class ExperimentRun(object):
                 )
             )
 
-        koma_patch = os.path.join(self.dirs.koma_patches_dir, "koma.patch")
-        ktls_patch = os.path.join(self.dirs.koma_patches_dir, "ktls-module.patch")
-        self._apply_kernel_patch_if_needed(koma_patch, "koma.patch")
+        rakaia_patch = os.path.join(self.dirs.rakaia_patches_dir, "rakaia.patch")
+        ktls_patch = os.path.join(self.dirs.rakaia_patches_dir, "ktls-module.patch")
+        self._apply_kernel_patch_if_needed(rakaia_patch, "rakaia.patch")
         self._apply_kernel_patch_if_needed(ktls_patch, "ktls-module.patch")
 
         with self.server_conn.cd(self.dirs.kernel_tree_dir):
@@ -345,10 +345,10 @@ class ExperimentRun(object):
             self.server_conn.run("sudo make modules_install")
             self.server_conn.run("sudo make install")
             self.server_conn.run(
-                r"sudo sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=\"1>Ubuntu, with Linux 6.8.0-koma\"/' /etc/default/grub"
+                r"sudo sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=\"1>Ubuntu, with Linux 6.8.0-rakaia\"/' /etc/default/grub"
             )
             self.server_conn.run("sudo update-grub")
-            self.log("Finished patching cloudlab server with KOMA kernel (koma + ktls)")
+            self.log("Finished patching cloudlab server with RAKAIA kernel (rakaia + ktls)")
         self._reboot_server_and_wait()
 
     def _apply_kernel_patch_if_needed(self, patch_path: str, patch_label: str):
@@ -400,7 +400,7 @@ class ExperimentRun(object):
     def _reboot_server_and_wait(self):
         self.log("Rebooting server")
         self.server_conn.run(
-            "sudo nohup sh -c 'sleep 1; reboot' >/tmp/koma-bench-reboot.log 2>&1 &",
+            "sudo nohup sh -c 'sleep 1; reboot' >/tmp/rakaia-bench-reboot.log 2>&1 &",
             warn=True,
         )
         self.server_conn.close()
@@ -473,7 +473,7 @@ class ExperimentRun(object):
         conn_key = self._conn_key(conn)
         if conn_key in self._go_setup_hosts:
             return
-        go_version = os.environ.get("KOMA_OSDI_GO_VERSION", "1.25.0")
+        go_version = os.environ.get("RAKAIA_OSDI_GO_VERSION", "1.25.0")
         go_archive = "go{}.linux-amd64.tar.gz".format(go_version)
         go_binary = "/usr/local/go/bin/go"
         with conn.cd(self.dirs.home_dir):
@@ -558,7 +558,7 @@ class ExperimentRun(object):
             conn.run("sudo test/distrib/cpp/run_distrib_test_cmake_module_install.sh")
     
     def __update_linux(self):
-        self.patch_cloudlab_koma_kernel()
+        self.patch_cloudlab_rakaia_kernel()
 
     def __clean_lancet(self):
         for client in self.exp_config.clients_conn:
@@ -567,7 +567,7 @@ class ExperimentRun(object):
     def __clean_server(self):
         kill_process(self.server_conn, "spin")
         kill_process(self.server_conn, "silo")
-        unload_kmodule(self.server_conn, self.dirs.koma_plain_dir, "koma")
+        unload_kmodule(self.server_conn, self.dirs.rakaia_plain_dir, "rakaia")
 
     def __setup_server(self):
         self.server_conn.run(
@@ -592,21 +592,21 @@ class ExperimentRun(object):
             self.server_conn.run("make")
             self.server_conn.run("sudo make install")
 
-        # Ensure the artifact repo is present on the server (koma kernel
+        # Ensure the artifact repo is present on the server (rakaia kernel
         # modules build inside it; bench/servers/make runs from it). The
         # helper is idempotent and updates submodules.
         self.ensure_project_repo(self.server_conn)
 
         # set up golang on the server (needed for spin-grpc-go / silo-grpc-go)
         self.setup_go(self.server_conn)
-        # Build all pinned Koma module variants against the currently running
+        # Build all pinned Rakaia module variants against the currently running
         # kernel so experiments can load them without checkout-time mutation.
-        for koma_dir in [
-            self.dirs.koma_plain_dir,
-            self.dirs.koma_grpc_dir,
-            self.dirs.koma_tls_dir,
+        for rakaia_dir in [
+            self.dirs.rakaia_plain_dir,
+            self.dirs.rakaia_grpc_dir,
+            self.dirs.rakaia_tls_dir,
         ]:
-            with self.server_conn.cd(koma_dir):
+            with self.server_conn.cd(rakaia_dir):
                 self.server_conn.run("make clean", warn=True)
                 self.server_conn.run("make")
         # one-time build of the user-space servers; per-experiment make refreshes
@@ -669,17 +669,17 @@ class ExperimentRun(object):
 
     def run_server(self, s_config, d_config):
         """
-        s_config: config for the server (e.g., grpc-go, grpc-koma-go)
+        s_config: config for the server (e.g., grpc-go, grpc-rakaia-go)
         d_config: distribution for service time (fixed, exponential, bimodal)
         """
         server_conn =self.exp_config.servers_conn[0]
         ulimit_set(self.exp_config.servers_conn[0])
 
         ######## gRPC server ########
-        if s_config == "grpc-koma-go":
+        if s_config == "grpc-rakaia-go":
             server_name = "spin-grpc-go"
-            unload_kmodule(server_conn, self.dirs.koma_grpc_dir, "koma")
-            load_kmodule(server_conn, self.dirs.koma_grpc_dir, "koma")
+            unload_kmodule(server_conn, self.dirs.rakaia_grpc_dir, "rakaia")
+            load_kmodule(server_conn, self.dirs.rakaia_grpc_dir, "rakaia")
         elif s_config == "grpc-go":
             server_name = "spin-grpc-go"
 
@@ -690,10 +690,10 @@ class ExperimentRun(object):
             server_name = "spin-kcm"
         elif s_config == "pool":
             server_name = "spin-linux-pool"
-        elif s_config == "koma":
-            server_name = "spin-koma"
-            unload_kmodule(server_conn, self.dirs.koma_plain_dir, "koma")
-            load_kmodule(server_conn, self.dirs.koma_plain_dir, "koma")
+        elif s_config == "rakaia":
+            server_name = "spin-rakaia"
+            unload_kmodule(server_conn, self.dirs.rakaia_plain_dir, "rakaia")
+            load_kmodule(server_conn, self.dirs.rakaia_plain_dir, "rakaia")
         
         ######### vanilla TLS servers #########
         elif s_config == "floating-tls":
@@ -702,10 +702,10 @@ class ExperimentRun(object):
         elif s_config == "pool-tls":
             server_name = "spin-linux-pool-tls"
 
-        elif s_config == "koma-tls":
-            server_name = "spin-koma-tls"
-            unload_kmodule(server_conn, self.dirs.koma_tls_dir, "koma")
-            load_kmodule(server_conn, self.dirs.koma_tls_dir, "koma")
+        elif s_config == "rakaia-tls":
+            server_name = "spin-rakaia-tls"
+            unload_kmodule(server_conn, self.dirs.rakaia_tls_dir, "rakaia")
+            load_kmodule(server_conn, self.dirs.rakaia_tls_dir, "rakaia")
             self.verify_cloudlab_ktls_module()
 
         ######### SILO servers #########
@@ -713,24 +713,24 @@ class ExperimentRun(object):
             server_name = "silo-kcm"
         elif s_config == "silo-partition" or s_config == "silo-floating":
             server_name = "silo-linux"
-        elif s_config == "silo-koma":
-            server_name = "silo-koma"
-            unload_kmodule(server_conn, self.dirs.koma_plain_dir, "koma")
-            load_kmodule(server_conn, self.dirs.koma_plain_dir, "koma")
-        elif s_config == "silo-grpc-koma-go":
+        elif s_config == "silo-rakaia":
+            server_name = "silo-rakaia"
+            unload_kmodule(server_conn, self.dirs.rakaia_plain_dir, "rakaia")
+            load_kmodule(server_conn, self.dirs.rakaia_plain_dir, "rakaia")
+        elif s_config == "silo-grpc-rakaia-go":
             server_name = "silo-grpc-go"
-            unload_kmodule(server_conn, self.dirs.koma_grpc_dir, "koma")
-            load_kmodule(server_conn, self.dirs.koma_grpc_dir, "koma")
+            unload_kmodule(server_conn, self.dirs.rakaia_grpc_dir, "rakaia")
+            load_kmodule(server_conn, self.dirs.rakaia_grpc_dir, "rakaia")
         elif s_config == "silo-grpc-go":
             server_name = "silo-grpc-go"
         elif s_config == "silo-pool":
             server_name = "silo-linux-pool"
 
         ######### SILO TLSservers #########
-        elif s_config == "silo-koma-tls":
-            server_name = "silo-koma-tls"
-            unload_kmodule(server_conn, self.dirs.koma_tls_dir, "koma")
-            load_kmodule(server_conn, self.dirs.koma_tls_dir, "koma")
+        elif s_config == "silo-rakaia-tls":
+            server_name = "silo-rakaia-tls"
+            unload_kmodule(server_conn, self.dirs.rakaia_tls_dir, "rakaia")
+            load_kmodule(server_conn, self.dirs.rakaia_tls_dir, "rakaia")
             self.verify_cloudlab_ktls_module()
         elif s_config == "silo-floating-tls":
             server_name = "silo-linux-tls"
@@ -788,8 +788,8 @@ class ExperimentRun(object):
                 if pool_args:
                     cmd = "{} {}".format(
                         cmd, " ".join(shlex.quote(arg) for arg in pool_args))
-            if s_config == "grpc-koma-go" or s_config == "silo-grpc-koma-go":
-                cmd = "env GRPC_KOMA_CORES={} {}".format(
+            if s_config == "grpc-rakaia-go" or s_config == "silo-grpc-rakaia-go":
+                cmd = "env GRPC_RAKAIA_CORES={} {}".format(
                     shlex.quote(numa_cores), cmd
                 )
             cmd = 'dtach -n `mktemp -u /tmp/%s.XXXX` %s' % ('dtach', cmd)
@@ -815,13 +815,13 @@ class ExperimentRun(object):
         # config linux accordingly
         server_config: dict[str, int] = dict()
         if config == "grpc-go" or config == "silo-grpc-go":
-            self._configure_server_grpc_go_mod(use_koma=False)
+            self._configure_server_grpc_go_mod(use_rakaia=False)
             self._refresh_server_go_modules()
             self._build_server_target("silo-grpc-go" if config == "silo-grpc-go" else "spin-grpc-go")
-        elif config == "grpc-koma-go" or config == "silo-grpc-koma-go":
-            self._configure_server_grpc_go_mod(use_koma=True)
+        elif config == "grpc-rakaia-go" or config == "silo-grpc-rakaia-go":
+            self._configure_server_grpc_go_mod(use_rakaia=True)
             self._refresh_server_go_modules()
-            self._build_server_target("silo-grpc-go" if config == "silo-grpc-koma-go" else "spin-grpc-go")
+            self._build_server_target("silo-grpc-go" if config == "silo-grpc-rakaia-go" else "spin-grpc-go")
         if config == "partition" or config == "silo-partition":
             server_config['CONFIG_REGISTER_FD_TO_ALL_EPOLLS'] = 0 
             server_config['CONFIG_USE_EPOLLEXCLUSIVE'] = 0 

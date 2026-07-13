@@ -55,21 +55,21 @@
             \addlegendimage{grpc_vanillaStyle, dotted, cLightPurple!80, mark=*}
             \addlegendentry{gRPC-POSIX-24}
 
-            \addlegendimage{grpc_komaStyle, dotted, cViolet!80, mark=*}
+            \addlegendimage{grpc_rakaiaStyle, dotted, cViolet!80, mark=*}
             \addlegendentry{grpc-\system-24}
 
             \addlegendimage{grpc_vanillaStyle}
             \addlegendentry{gRPC-POSIX-5,000}
 
-            \addlegendimage{grpc_komaStyle}
+            \addlegendimage{grpc_rakaiaStyle}
             \addlegendentry{grpc-\system-5,000}
 
             \SyntheticGrpcPlot{
-                grpc_komaStyle, line width=2pt, dotted, cViolet!70, mark=*,
+                grpc_rakaiaStyle, line width=2pt, dotted, cViolet!70, mark=*,
                 x filter/.code={
                     \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                 }
-            }{x expr=\thisrow{load_grpc-koma-go(QPS)} / 1000, y=latency_grpc-koma-go}{data/synthetic_grpc_24conn.csv}
+            }{x expr=\thisrow{load_grpc-rakaia-go(QPS)} / 1000, y=latency_grpc-rakaia-go}{data/synthetic_grpc_24conn.csv}
 
             \SyntheticGrpcPlot{
                 grpc_vanillaStyle, line width=2pt, dotted, cLightPurple!70, mark=*,
@@ -112,11 +112,11 @@
                 ]
 
                 \SyntheticGrpcPlot{
-                    grpc_komaStyle, line width=2pt,
+                    grpc_rakaiaStyle, line width=2pt,
                     x filter/.code={
                         \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                     }
-                }{x expr=\thisrow{load_grpc-koma-go(QPS)} / 1000, y=latency_grpc-koma-go}{data/synthetic_grpc_5000conn.csv}
+                }{x expr=\thisrow{load_grpc-rakaia-go(QPS)} / 1000, y=latency_grpc-rakaia-go}{data/synthetic_grpc_5000conn.csv}
 
                 \SyntheticGrpcPlot{
                     grpc_vanillaStyle, line width=2pt,

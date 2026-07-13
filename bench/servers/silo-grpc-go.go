@@ -76,7 +76,7 @@ type siloWorker struct {
 var freeWorkers chan *siloWorker
 
 func resolveNumWorkers(defaultWorkers uint32) uint32 {
-	cores := os.Getenv("GRPC_KOMA_CORES")
+	cores := os.Getenv("GRPC_RAKAIA_CORES")
 	if cores == "" {
 		return defaultWorkers
 	}

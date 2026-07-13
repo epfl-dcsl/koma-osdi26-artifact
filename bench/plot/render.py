@@ -20,36 +20,36 @@ DEFAULT_SCHEDSIM_DATA_DIR = REPO_ROOT / "third_party" / "schedsim" / "scripts" /
 DEFAULT_OUTPUT_DIR = PLOT_DIR / "out"
 
 SYNTHETIC_HEADER = (
-    "dist_config, lancet_load, n_repetition, load_koma(QPS), "
+    "dist_config, lancet_load, n_repetition, load_rakaia(QPS), "
     "load_partition(QPS), load_floating(QPS), load_kcm_floating(QPS), "
-    "load_pool(QPS), latency_koma, latency_partition, latency_floating, "
+    "load_pool(QPS), latency_rakaia, latency_partition, latency_floating, "
     "latency_kcm_floating, latency_pool\n"
 )
 TLS_HEADER = (
     "dist_config, lancet_load, n_repetition, load_floating-tls(QPS), "
-    "load_koma-tls(QPS), load_pool-tls(QPS), latency_floating-tls, "
-    "latency_koma-tls, latency_pool-tls\n"
+    "load_rakaia-tls(QPS), load_pool-tls(QPS), latency_floating-tls, "
+    "latency_rakaia-tls, latency_pool-tls\n"
 )
 GRPC_HEADER = (
     "dist_config, lancet_load, n_repetition, load_grpc-go(QPS), "
-    "load_grpc-koma-go(QPS), latency_grpc-go, latency_grpc-koma-go\n"
+    "load_grpc-rakaia-go(QPS), latency_grpc-go, latency_grpc-rakaia-go\n"
 )
 SILO_HEADER = (
-    "dist_config, lancet_load, n_repetition, load_silo-koma(QPS), "
+    "dist_config, lancet_load, n_repetition, load_silo-rakaia(QPS), "
     "load_silo-partition(QPS), load_silo-floating(QPS), "
-    "load_silo-kcm_floating(QPS), load_silo-pool(QPS), latency_silo-koma, "
+    "load_silo-kcm_floating(QPS), load_silo-pool(QPS), latency_silo-rakaia, "
     "latency_silo-partition, latency_silo-floating, "
     "latency_silo-kcm_floating, latency_silo-pool\n"
 )
 SILO_TLS_HEADER = (
-    "dist_config, lancet_load, n_repetition, load_silo-koma-tls(QPS), "
+    "dist_config, lancet_load, n_repetition, load_silo-rakaia-tls(QPS), "
     "load_silo-floating-tls(QPS), load_silo-pool-tls(QPS), "
-    "latency_silo-koma-tls, latency_silo-floating-tls, latency_silo-pool-tls\n"
+    "latency_silo-rakaia-tls, latency_silo-floating-tls, latency_silo-pool-tls\n"
 )
 SILO_GRPC_HEADER = (
     "dist_config, lancet_load, n_repetition, load_silo-grpc-go(QPS), "
-    "load_silo-grpc-koma-go(QPS), latency_silo-grpc-go, "
-    "latency_silo-grpc-koma-go\n"
+    "load_silo-grpc-rakaia-go(QPS), latency_silo-grpc-go, "
+    "latency_silo-grpc-rakaia-go\n"
 )
 SCHEDSIM_HEADER = "Req/time_unit,99th (us)\n"
 SILO_CCDF_HEADER = "latency_us,ccdf\n"

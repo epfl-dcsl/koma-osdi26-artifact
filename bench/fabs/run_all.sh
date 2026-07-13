@@ -108,8 +108,8 @@ Usage: $(basename "$0") [OPTIONS]
 Options:
   --setup                     Full machine setup: install deps, build lancet, deploy agents
                               (run once per fresh cluster allocation)
-  --patch-kernel              Patch and install the Koma kernel on the server machine
-                              (applies both koma.patch and ktls-module.patch)
+  --patch-kernel              Patch and install the Rakaia kernel on the server machine
+                              (applies both rakaia.patch and ktls-module.patch)
   --verify-ktls               Verify the patched tls.ko is loaded (run after rebooting)
   --update                    Pull latest repo code and redeploy lancet agents
   --experiments EXP[,EXP...]  Comma-separated list of experiments to run, or 'all'
@@ -213,7 +213,7 @@ cd "$FABS_DIR"
 
 # --- server-side setup tasks ---
 if $do_patch_kernel; then
-    fab_run "$SERVER" cloudlab-patch-koma-kernel
+    fab_run "$SERVER" cloudlab-patch-rakaia-kernel
 fi
 
 if $do_verify_ktls; then

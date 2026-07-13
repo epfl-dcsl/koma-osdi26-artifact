@@ -78,7 +78,7 @@ func (g *BimodalGen) Generate() int {
 var generator Generator
 
 func resolveNumWorkers(defaultWorkers uint32) uint32 {
-	cores := os.Getenv("GRPC_KOMA_CORES")
+	cores := os.Getenv("GRPC_RAKAIA_CORES")
 	if cores == "" {
 		return defaultWorkers
 	}

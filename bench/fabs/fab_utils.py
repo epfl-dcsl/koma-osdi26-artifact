@@ -29,7 +29,7 @@ def resolve_remote_username(username: str | None = None) -> str:
 
 
 def resolve_remote_home_dir(username: str, conn: Connection | None = None) -> str:
-    configured_home_dir = getenv_any(["KOMA_OSDI_HOME_DIR"])
+    configured_home_dir = getenv_any(["RAKAIA_OSDI_HOME_DIR"])
     if configured_home_dir:
         return configured_home_dir
 
@@ -74,15 +74,15 @@ class ProjDir(object):
 
         self.grpc_dir = "{}/grpc".format(self.home_dir)
         self.proj_dir = getenv_any(
-            ["KOMA_OSDI_PROJECT_DIR"],
-            "{}/koma-osdi26-artifact".format(self.home_dir),
+            ["RAKAIA_OSDI_PROJECT_DIR"],
+            "{}/rakaia-osdi26-artifact".format(self.home_dir),
         )
         self.project_repo_url = getenv_any(
-            ["KOMA_OSDI_PROJECT_REPO"],
-            "git@github.com:epfl-dcsl/koma-osdi26-artifact.git",
+            ["RAKAIA_OSDI_PROJECT_REPO"],
+            "git@github.com:epfl-dcsl/rakaia-osdi26-artifact.git",
         )
         self.ssh_private_key = getenv_any(
-            ["KOMA_OSDI_SSH_KEY"],
+            ["RAKAIA_OSDI_SSH_KEY"],
             "{}/.ssh/id_rsa".format(self.home_dir),
         )
 
@@ -97,51 +97,51 @@ class ProjDir(object):
         self.coord_dir = "{}/coordinator".format(self.lancet_dir)
         self.schedsim_dir = "{}/schedsim".format(self.third_party_dir)
 
-        self.koma_root_dir = "{}/koma".format(self.proj_dir)
-        self.koma_patches_dir = "{}/patches".format(self.koma_root_dir)
-        self.koma_plain_dir = getenv_any(
-            ["KOMA_OSDI_KOMA_PLAIN_DIR"],
-            "{}/plain-tcp".format(self.koma_root_dir),
+        self.rakaia_root_dir = "{}/rakaia".format(self.proj_dir)
+        self.rakaia_patches_dir = "{}/patches".format(self.rakaia_root_dir)
+        self.rakaia_plain_dir = getenv_any(
+            ["RAKAIA_OSDI_RAKAIA_PLAIN_DIR"],
+            "{}/plain-tcp".format(self.rakaia_root_dir),
         )
-        self.koma_grpc_dir = getenv_any(
-            ["KOMA_OSDI_KOMA_GRPC_DIR"],
-            "{}/grpc".format(self.koma_root_dir),
+        self.rakaia_grpc_dir = getenv_any(
+            ["RAKAIA_OSDI_RAKAIA_GRPC_DIR"],
+            "{}/grpc".format(self.rakaia_root_dir),
         )
-        self.koma_tls_dir = getenv_any(
-            ["KOMA_OSDI_KOMA_TLS_DIR"],
-            "{}/tls".format(self.koma_root_dir),
+        self.rakaia_tls_dir = getenv_any(
+            ["RAKAIA_OSDI_RAKAIA_TLS_DIR"],
+            "{}/tls".format(self.rakaia_root_dir),
         )
         self.grpc_go_module_url = getenv_any(
-            ["KOMA_OSDI_GRPC_GO_MODULE_URL"],
+            ["RAKAIA_OSDI_GRPC_GO_MODULE_URL"],
             "github.com/rainayangg/grpc-go",
         )
         self.grpc_go_module_version = getenv_any(
-            ["KOMA_OSDI_GRPC_GO_MODULE_VERSION"],
+            ["RAKAIA_OSDI_GRPC_GO_MODULE_VERSION"],
             "v0.0.0-20260325234553-a764f0be0b0d",
         )
         self.net_go_module_url = getenv_any(
-            ["KOMA_OSDI_NET_GO_MODULE_URL"],
+            ["RAKAIA_OSDI_NET_GO_MODULE_URL"],
             "github.com/rainayangg/net-go",
         )
         self.net_go_module_version = getenv_any(
-            ["KOMA_OSDI_NET_GO_MODULE_VERSION"],
+            ["RAKAIA_OSDI_NET_GO_MODULE_VERSION"],
             "v0.0.0-20260313180441-b5081d74e7cf",
         )
         self.kernel_tree_dir = getenv_any(
-            ["KOMA_OSDI_KERNEL_TREE"],
+            ["RAKAIA_OSDI_KERNEL_TREE"],
             "{}/linux-6.8".format(self.home_dir),
         )
         self.kernel_tarball = getenv_any(
-            ["KOMA_OSDI_KERNEL_TARBALL"],
+            ["RAKAIA_OSDI_KERNEL_TARBALL"],
             "{}/linux-6.8.tar.gz".format(self.home_dir),
         )
         self.kernel_tarball_url = getenv_any(
-            ["KOMA_OSDI_KERNEL_TARBALL_URL"],
+            ["RAKAIA_OSDI_KERNEL_TARBALL_URL"],
             "https://mirrors.edge.kernel.org/pub/linux/kernel/v6.x/linux-6.8.tar.gz",
         )
         self.ktls_kernel_release = getenv_any(
-            ["KOMA_OSDI_KTLS_KERNEL_RELEASE"],
-            "6.8.0-koma",
+            ["RAKAIA_OSDI_KTLS_KERNEL_RELEASE"],
+            "6.8.0-rakaia",
         )
 
         self.throu_res = "{}/throughput_res.txt".format(self.res_dir)
@@ -172,7 +172,7 @@ def _first_nonempty_output(conn: Connection, commands: list[str]) -> str:
 
 
 def get_iface(conn) -> str:
-    configured_iface = os.environ.get("KOMA_OSDI_IFACE")
+    configured_iface = os.environ.get("RAKAIA_OSDI_IFACE")
     if configured_iface:
         return configured_iface
 
@@ -183,7 +183,7 @@ def get_iface(conn) -> str:
     ])
 
 def get_ip_addr(conn) -> str:
-    configured_ip = os.environ.get("KOMA_OSDI_IP_ADDR")
+    configured_ip = os.environ.get("RAKAIA_OSDI_IP_ADDR")
     if configured_ip:
         return configured_ip
 
@@ -225,7 +225,7 @@ def unload_kmodule(conn: Connection, mdir: str, mname: str):
     Unload a kernel module 
     :param conn: connection
     :param mdir: kept for call-site symmetry with load_kmodule
-    :param mname: the name of the kernel module, e.g., koma
+    :param mname: the name of the kernel module, e.g., rakaia
     """
     conn.run("sudo rmmod {}".format(mname), warn=True)
 
@@ -234,7 +234,7 @@ def load_kmodule(conn: Connection, mdir: str, mname: str):
     load a kernel module 
     :param c: connection 
     :param mdir: directory which contains "<mname>.ko"
-    :param mname: the name of the kernel module, e.g., koma
+    :param mname: the name of the kernel module, e.g., rakaia
     """
     if not conn.run("test -f {}/{}.ko".format(mdir, mname), warn=True, hide=True).ok:
         raise RuntimeError("kernel module {} is missing from {}".format(mname, mdir))

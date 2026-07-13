@@ -14,9 +14,9 @@ void start_linux_pool_server(const char *str, const char *io_threads_arg,
 void init_kcm(void);
 void start_kcm_server(const char *);
 
-// koma related
-void init_koma(void);
-void start_koma_server(const char *);
+// rakaia related
+void init_rakaia(void);
+void start_rakaia_server(const char *);
 
 extern __thread int thread_no;
 extern int nr_cpu;

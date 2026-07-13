@@ -54,9 +54,9 @@ int bpf_init(void) {
     exit(1);
   }
   mod = bpf_module_create_c(bpf_prog, 0, NULL, 0, 0, NULL);
-  fd = bcc_prog_load(BPF_PROG_TYPE_SK_SKB, "memcached_koma",
-                     bpf_function_start(mod, "memcached_koma"),
-                     bpf_function_size(mod, "memcached_koma"),
+  fd = bcc_prog_load(BPF_PROG_TYPE_SK_SKB, "memcached_rakaia",
+                     bpf_function_start(mod, "memcached_rakaia"),
+                     bpf_function_size(mod, "memcached_rakaia"),
                      bpf_module_license(mod), bpf_module_kern_version(mod), 0,
                      NULL, 0);
   /*printf("fd of kcm ebpf file is: %d\n", fd);*/

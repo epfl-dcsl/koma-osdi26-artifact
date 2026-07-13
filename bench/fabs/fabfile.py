@@ -66,9 +66,9 @@ def run_experiment(conn, dist_config, server_config, exp_name, exp_config, durat
     lat = {i: [] for i in server_config}
 
     build_targets = []
-    if any(config in {"grpc-go", "grpc-koma-go"} for config in server_config):
+    if any(config in {"grpc-go", "grpc-rakaia-go"} for config in server_config):
         build_targets.append("spin-grpc-go")
-    if any(config in {"silo-grpc-go", "silo-grpc-koma-go"} for config in server_config):
+    if any(config in {"silo-grpc-go", "silo-grpc-rakaia-go"} for config in server_config):
         build_targets.append("silo-grpc-go")
     with exp_run.server_conn.cd(exp_run.dirs.server_dir):
         exp_run.server_conn.run("make clean")
@@ -118,7 +118,7 @@ def run_experiment(conn, dist_config, server_config, exp_name, exp_config, durat
 
 
 @task
-def cloudlab_patch_koma_kernel(conn):
+def cloudlab_patch_rakaia_kernel(conn):
     proj_dir = project_dirs(conn)
     exp_config = ExperimentConfig(
         proj_dir=proj_dir,
@@ -126,7 +126,7 @@ def cloudlab_patch_koma_kernel(conn):
         exp_config=single_host_config(conn),
     )
     exp_run = ExperimentRun(exp_config=exp_config)
-    exp_run.patch_cloudlab_koma_kernel()
+    exp_run.patch_cloudlab_rakaia_kernel()
 
 
 @task
@@ -151,76 +151,76 @@ def cloudlab_verify_ktls_module(conn):
 
 @task
 def gRPC20_Conn24(conn):
-    server_config = ["grpc-go", "grpc-koma-go"]
+    server_config = ["grpc-go", "grpc-rakaia-go"]
     dist_config = ["exponential"]
 
     run_experiment(conn, dist_config, server_config, ExperimentType.GRPC20_Conn24.name, grpcBench, 2)
 
 @task
 def gRPC20_Conn5000(conn):
-    server_config = ["grpc-go", "grpc-koma-go"]
+    server_config = ["grpc-go", "grpc-rakaia-go"]
     dist_config = ["exponential"]
     run_experiment(conn, dist_config, server_config, ExperimentType.GRPC20_Conn5000.name, grpcBench, 2)
 
 @task
 def Silo_GRPC_Conn24(conn):
-    server_config = ["silo-grpc-go", "silo-grpc-koma-go"]
+    server_config = ["silo-grpc-go", "silo-grpc-rakaia-go"]
     dist_config = ["silo"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Silo_GRPC_Conn24.name, siloGrpcBench, 2)
 
 @task
 def Silo_GRPC_Conn5000(conn):
-    server_config = ["silo-grpc-go", "silo-grpc-koma-go"]
+    server_config = ["silo-grpc-go", "silo-grpc-rakaia-go"]
     dist_config = ["silo"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Silo_GRPC_Conn5000.name, siloGrpcBench, 2)
 
 
 @task
 def vanilla100_Conn20(conn):
-    server_config = ["koma", "partition", "floating", "kcm_floating", "pool"]
+    server_config = ["rakaia", "partition", "floating", "kcm_floating", "pool"]
     dist_config = ["fixed", "exponential", "bimodal"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Vanilla100_Conn20.name, vanillaBench, 1)
 
 @task
 def vanilla100_Conn80(conn):
-    server_config = ["koma", "partition", "floating", "kcm_floating", "pool"]
+    server_config = ["rakaia", "partition", "floating", "kcm_floating", "pool"]
     dist_config = ["fixed", "exponential", "bimodal"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Vanilla100_Conn80.name, vanillaBench, 1)
 
 
 @task
 def vanilla20_Conn80(conn):
-    server_config = ["koma", "partition", "floating", "kcm_floating", "pool"]
+    server_config = ["rakaia", "partition", "floating", "kcm_floating", "pool"]
     dist_config = ["fixed", "exponential", "bimodal"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Vanilla20_Conn80.name, vanillaBench, 1)
 
 
 @task
 def vanilla100_Conn5000(conn):
-    server_config = ["koma", "partition", "floating", "kcm_floating", "pool"]
+    server_config = ["rakaia", "partition", "floating", "kcm_floating", "pool"]
     dist_config = ["fixed", "exponential", "bimodal"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Vanilla100_Conn5000.name, vanillaBench, 1)
 
 @task
 def TLS100_Conn80(conn):
-    server_config = ["floating-tls", "koma-tls", "pool-tls"]
+    server_config = ["floating-tls", "rakaia-tls", "pool-tls"]
     dist_config = ["fixed", "exponential", "bimodal"]
     run_experiment(conn, dist_config, server_config, ExperimentType.TLS100_Conn80.name, vanillaTLSBench, 1)
 
 @task
 def TLS20_Conn80(conn):
-    server_config = ["floating-tls", "koma-tls", "pool-tls"]
+    server_config = ["floating-tls", "rakaia-tls", "pool-tls"]
     dist_config = ["fixed", "exponential", "bimodal"]
     run_experiment(conn, dist_config, server_config, ExperimentType.TLS20_Conn80.name, vanillaTLSBench, 1)
 
 @task
 def silo_vanilla_80(conn):
-    server_config = ["silo-koma", "silo-partition", "silo-floating", "silo-kcm_floating", "silo-pool"]
+    server_config = ["silo-rakaia", "silo-partition", "silo-floating", "silo-kcm_floating", "silo-pool"]
     dist_config = ["silo"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Silo_Conn80.name, vanillaBench, 1)
 
 @task
 def silo_vanilla_tls_80(conn):
-    server_config = ["silo-koma-tls",  "silo-floating-tls", "silo-pool-tls"]
+    server_config = ["silo-rakaia-tls",  "silo-floating-tls", "silo-pool-tls"]
     dist_config = ["silo"]
     run_experiment(conn, dist_config, server_config, ExperimentType.Silo_Conn80_TLS.name, vanillaTLSBench, 1)

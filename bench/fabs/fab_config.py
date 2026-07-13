@@ -31,9 +31,9 @@ def _parse_bool(env_var: str, default: bool) -> bool:
 
 
 ######### config for the servers' setup #########
-DEFAULT_REMOTE_USER = os.environ.get("KOMA_OSDI_REMOTE_USER", "raina96")
-DEFAULT_SSH_PRIVATE_KEY = os.environ.get("KOMA_OSDI_SSH_KEY", "~/.ssh/id_rsa")
-ENABLE_SSH_AGENT_FORWARDING = _parse_bool("KOMA_OSDI_FORWARD_AGENT", True)
+DEFAULT_REMOTE_USER = os.environ.get("RAKAIA_OSDI_REMOTE_USER", "raina96")
+DEFAULT_SSH_PRIVATE_KEY = os.environ.get("RAKAIA_OSDI_SSH_KEY", "~/.ssh/id_rsa")
+ENABLE_SSH_AGENT_FORWARDING = _parse_bool("RAKAIA_OSDI_FORWARD_AGENT", True)
 
 CLOUDLAB_COORDINATOR = "hp171.utah.cloudlab.us"
 CLOUDLAB_CLIENTS = [
@@ -67,13 +67,13 @@ CLOUDLAB_GRPC_CLIENTS = [
 CLOUDLAB_SERVER = "hp161.utah.cloudlab.us"
 
 
-COORDINATOR = _parse_hosts("KOMA_OSDI_COORDINATOR", [CLOUDLAB_COORDINATOR])
-SYM_CLIENTS = _parse_hosts("KOMA_OSDI_SYM_CLIENTS", CLOUDLAB_CLIENTS)
-ASYM_CLIENTS = _parse_hosts("KOMA_OSDI_ASYM_CLIENTS", CLOUDLAB_GRPC_CLIENTS)
-SERVER = _parse_hosts("KOMA_OSDI_SERVER", [CLOUDLAB_SERVER])
+COORDINATOR = _parse_hosts("RAKAIA_OSDI_COORDINATOR", [CLOUDLAB_COORDINATOR])
+SYM_CLIENTS = _parse_hosts("RAKAIA_OSDI_SYM_CLIENTS", CLOUDLAB_CLIENTS)
+ASYM_CLIENTS = _parse_hosts("RAKAIA_OSDI_ASYM_CLIENTS", CLOUDLAB_GRPC_CLIENTS)
+SERVER = _parse_hosts("RAKAIA_OSDI_SERVER", [CLOUDLAB_SERVER])
 SERVER_PORT = 40001
 
-TLS_SERVER = _parse_hosts("KOMA_OSDI_TLS_SERVER", [CLOUDLAB_SERVER])
+TLS_SERVER = _parse_hosts("RAKAIA_OSDI_TLS_SERVER", [CLOUDLAB_SERVER])
 TLS_SERVER_PORT = 40002
 
 ######### Configuration Classes #########
@@ -102,7 +102,7 @@ setupConfig: MachinesConfig = {
     'lancet_config': None
 }
 
-########## config for the gRPC vs Koma+gRPC benchmark SW experiments (without TLS) #########
+########## config for the gRPC vs Rakaia+gRPC benchmark SW experiments (without TLS) #########
 grpcConfig: LancetConfig = {
     'transport_proto': 'GRPC_GO',
     'idist': 'exp',
@@ -120,7 +120,7 @@ grpcBench: MachinesConfig = {
 }
 
 
-########## config for the SILO gRPC vs Koma+gRPC benchmark SW experiments (without TLS) #########
+########## config for the SILO gRPC vs Rakaia+gRPC benchmark SW experiments (without TLS) #########
 siloGrpcConfig: LancetConfig = {
     'transport_proto': 'GRPC_GO',
     'idist': 'exp',
@@ -137,7 +137,7 @@ siloGrpcBench: MachinesConfig = {
     'lancet_config': siloGrpcConfig
 }
 
-########## config for Vanilla Koma, TCP partition & floating, and KCM #########
+########## config for Vanilla Rakaia, TCP partition & floating, and KCM #########
 vanillaConfig: LancetConfig = {
    'transport_proto': 'TCP',
    'idist': 'exp',
@@ -154,7 +154,7 @@ vanillaBench: MachinesConfig = {
     'lancet_config': vanillaConfig
 }
 
-########## config for Koma, TCP floating with TLS #########
+########## config for Rakaia, TCP floating with TLS #########
 vanillaTLSConfig: LancetConfig = {
    'transport_proto': 'TLS',
    'idist': 'exp',

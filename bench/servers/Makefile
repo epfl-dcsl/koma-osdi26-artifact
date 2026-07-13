@@ -40,8 +40,8 @@ SILO_LDLIBS := -pthread -lnuma
 
 .PHONY: all silo-objs clean
 
-all: spin-linux spin-koma spin-linux-tls spin-koma-tls spin-linux-pool spin-linux-pool-tls spin-kcm silo-linux silo-koma silo-kcm silo-linux-tls silo-linux-pool silo-linux-pool-tls silo-koma-tls spin-grpc-go silo-grpc-go
-# all: spin-linux spin-kcm spin-koma silo-linux silo-koma silo-kcm spin-grpc-go silo-grpc-go spin-linux-tls spin-koma-tls 
+all: spin-linux spin-rakaia spin-linux-tls spin-rakaia-tls spin-linux-pool spin-linux-pool-tls spin-kcm silo-linux silo-rakaia silo-kcm silo-linux-tls silo-linux-pool silo-linux-pool-tls silo-rakaia-tls spin-grpc-go silo-grpc-go
+# all: spin-linux spin-kcm spin-rakaia silo-linux silo-rakaia silo-kcm spin-grpc-go silo-grpc-go spin-linux-tls spin-rakaia-tls
 
 spin-grpc-go: spin-grpc-go.go go.mod go.sum
 	$(GO) build -tags spin -o ./spin-grpc-go ./spin-grpc-go.go
@@ -61,13 +61,13 @@ spin-linux-pool-tls: spin-linux-pool-tls.o common-linux-pool-tls.o
 spin-linux-tls: spin-linux-tls.o common-linux-tls.o
 	$(CXX) -o $@ $^ -pthread -lm -lssl -lcrypto
 
-spin-koma-tls: spin-koma-tls.o common-koma-tls.o koma-helpers.o
+spin-rakaia-tls: spin-rakaia-tls.o common-rakaia-tls.o rakaia-helpers.o
 	$(CXX) -o $@ $^ -pthread -lm -lssl -lcrypto
 
 spin-kcm: spin-kcm.o common-kcm.o kcm-helpers.o
 	$(CXX) -o $@ $^ -pthread -lm -lbcc
 
-spin-koma: spin-koma.o common-koma.o koma-helpers.o
+spin-rakaia: spin-rakaia.o common-rakaia.o rakaia-helpers.o
 	$(CXX) -o $@ $^ -pthread -lm
 
 silo-objs:
@@ -86,17 +86,17 @@ silo-linux-pool: silo-linux-pool.o common-linux-pool.o silo-workload.o | silo-ob
 silo-linux-pool-tls: silo-linux-pool-tls.o common-linux-pool-tls.o silo-workload.o | silo-objs
 	$(CXX) -o $@ $^ $(SILO_LINK_OBJS) $(SILO_LDLIBS) -lssl -lcrypto
 
-silo-koma: silo-koma.o common-koma.o koma-helpers.o silo-workload.o | silo-objs
+silo-rakaia: silo-rakaia.o common-rakaia.o rakaia-helpers.o silo-workload.o | silo-objs
 	$(CXX) -o $@ $^ $(SILO_LINK_OBJS) $(SILO_LDLIBS)
 
-silo-koma-tls: silo-koma-tls.o common-koma-tls.o koma-helpers.o silo-workload.o | silo-objs
+silo-rakaia-tls: silo-rakaia-tls.o common-rakaia-tls.o rakaia-helpers.o silo-workload.o | silo-objs
 	$(CXX) -o $@ $^ $(SILO_LINK_OBJS) $(SILO_LDLIBS) -lssl -lcrypto
 
 silo-kcm: silo-kcm.o common-kcm.o kcm-helpers.o silo-workload.o | silo-objs
 	$(CXX) -o $@ $^ $(SILO_LINK_OBJS) $(SILO_LDLIBS) -lbcc
 
 clean:
-	rm -f *.o *.d spin-linux spin-linux-pool spin-linux-pool-tls spin-kcm spin-koma silo-linux silo-koma silo-kcm spin-grpc-go spin-linux-tls spin-koma-tls silo-linux-tls silo-linux-pool silo-linux-pool-tls silo-koma-tls spin-grpc-go silo-grpc-go
+	rm -f *.o *.d spin-linux spin-linux-pool spin-linux-pool-tls spin-kcm spin-rakaia silo-linux silo-rakaia silo-kcm spin-grpc-go spin-linux-tls spin-rakaia-tls silo-linux-tls silo-linux-pool silo-linux-pool-tls silo-rakaia-tls spin-grpc-go silo-grpc-go
 	rm -rf cmake/build
 
 -include *.d

@@ -123,10 +123,10 @@
             \addlegendimage{workerPoolStyle}
             \addlegendentry{Worker Pool}
 
-            \addlegendimage{koma_tlsStyle}
+            \addlegendimage{rakaia_tlsStyle}
             \addlegendentry{\system-kTLS}
 
-            \addlegendimage{komaStyle}
+            \addlegendimage{rakaiaStyle}
             \addlegendentry{\system}
 
             \SiloPlot{
@@ -137,11 +137,11 @@
             }{x expr=\thisrow{load_silo-partition(QPS)} / 1000, y=latency_silo-partition}{data/silo_bench.csv}
 
             \SiloPlot{
-                komaStyle,
+                rakaiaStyle,
                 x filter/.code={
                     \IfStrEq{\thisrow{dist_config}}{silo}{}{\def\pgfmathresult{}}
                 }
-            }{x expr=\thisrow{load_silo-koma(QPS)} / 1000, y=latency_silo-koma}{data/silo_bench.csv}
+            }{x expr=\thisrow{load_silo-rakaia(QPS)} / 1000, y=latency_silo-rakaia}{data/silo_bench.csv}
 
             \SiloPlot{
                 floatingStyle,
@@ -179,11 +179,11 @@
             }{x expr=\thisrow{load_silo-pool-tls(QPS)} / 1000, y=latency_silo-pool-tls}{data/silo_tls.csv}
 
             \SiloPlot{
-                koma_tlsStyle,
+                rakaia_tlsStyle,
                 x filter/.code={
                     \IfStrEq{\thisrow{dist_config}}{silo}{}{\def\pgfmathresult{}}
                 }
-            }{x expr=\thisrow{load_silo-koma-tls(QPS)} / 1000, y=latency_silo-koma-tls}{data/silo_tls.csv}
+            }{x expr=\thisrow{load_silo-rakaia-tls(QPS)} / 1000, y=latency_silo-rakaia-tls}{data/silo_tls.csv}
         \end{axis}
     \end{tikzpicture}
     \caption{\nineninepct latency vs. throughput}
@@ -222,16 +222,16 @@
             \addlegendimage{grpc_vanillaStyle, dotted, mark=*, cLightPurple!80}
             \addlegendentry{gRPC-POSIX-24}
 
-            \addlegendimage{grpc_komaStyle, dotted, mark=*, cViolet!80}
+            \addlegendimage{grpc_rakaiaStyle, dotted, mark=*, cViolet!80}
             \addlegendentry{grpc-\system-24}
 
             \addlegendimage{grpc_vanillaStyle}
             \addlegendentry{gRPC-POSIX-5,000}
 
-            \addlegendimage{grpc_komaStyle}
+            \addlegendimage{grpc_rakaiaStyle}
             \addlegendentry{grpc-\system-5,000}
 
-\SiloPlot{grpc_komaStyle, dotted, mark=*, mark size=0.8pt}{x expr=\thisrow{load_silo-grpc-koma-go(QPS)}/1000, y=latency_silo-grpc-koma-go}{data/silo_grpc_24conn.csv}
+\SiloPlot{grpc_rakaiaStyle, dotted, mark=*, mark size=0.8pt}{x expr=\thisrow{load_silo-grpc-rakaia-go(QPS)}/1000, y=latency_silo-grpc-rakaia-go}{data/silo_grpc_24conn.csv}
 \SiloPlot{grpc_vanillaStyle, dotted, mark=*, mark size=0.8pt}{x expr=\thisrow{load_silo-grpc-go(QPS)}/1000, y=latency_silo-grpc-go}{data/silo_grpc_24conn.csv}
 \end{axis}
 \end{tikzpicture}
@@ -268,7 +268,7 @@
         /tikz/every even column/.append style={column sep=0.4cm},
         },
     ]
-\SiloPlot{grpc_komaStyle}{x expr=\thisrow{load_silo-grpc-koma-go(QPS)}/1000, y=latency_silo-grpc-koma-go}{data/silo_grpc_5000conn.csv}
+\SiloPlot{grpc_rakaiaStyle}{x expr=\thisrow{load_silo-grpc-rakaia-go(QPS)}/1000, y=latency_silo-grpc-rakaia-go}{data/silo_grpc_5000conn.csv}
 \SiloPlot{grpc_vanillaStyle}{x expr=\thisrow{load_silo-grpc-go(QPS)}/1000, y=latency_silo-grpc-go}{data/silo_grpc_5000conn.csv}
 \end{axis}
 \end{tikzpicture}

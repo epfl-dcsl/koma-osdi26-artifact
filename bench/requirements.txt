@@ -1,4 +1,4 @@
-# KOMA Bench - Minimal requirements for gRPC experiments
+# RAKAIA Bench - Minimal requirements for gRPC experiments
 fabric>=3.0.0
 pyyaml>=6.0
 pandas>=2.0.0

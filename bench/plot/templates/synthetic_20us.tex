@@ -104,11 +104,11 @@
                 }{x expr=\thisrow{load_kcm_floating(QPS)} / 1000, y=latency_kcm_floating}{data/synthetic_80_20us.csv}
 
                 \SyntheticTwentyUsPlot{
-                    komaStyle,
+                    rakaiaStyle,
                     x filter/.code={
                         \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
                     }
-                }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+                }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_20us.csv}
 
                 \SyntheticTwentyUsSchedsimPlot{d}
             \end{axis}
@@ -160,11 +160,11 @@
                 }{x expr=\thisrow{load_pool(QPS)} / 1000, y=latency_pool}{data/synthetic_80_20us.csv}
 
                 \SyntheticTwentyUsPlot{
-                    komaStyle,
+                    rakaiaStyle,
                     x filter/.code={
                         \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                     }
-                }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+                }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_20us.csv}
 
                 \SyntheticTwentyUsPlot{
                     partitionStyle,
@@ -223,7 +223,7 @@
                         /tikz/every even column/.append style={column sep=0.7cm},
                     },
                 ]
-                \addlegendimage{komaStyle}
+                \addlegendimage{rakaiaStyle}
                 \addlegendentry{\system}
 
                 \addlegendimage{mark=none, solid, cLightBlue}
@@ -237,11 +237,11 @@
                 }{x expr=\thisrow{load_pool(QPS)} / 1000, y=latency_pool}{data/synthetic_80_20us.csv}
 
                 \SyntheticTwentyUsPlot{
-                    komaStyle,
+                    rakaiaStyle,
                     x filter/.code={
                         \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
                     }
-                }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+                }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_20us.csv}
 
                 \SyntheticTwentyUsPlot{
                     partitionStyle,

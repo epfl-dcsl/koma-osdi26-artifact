@@ -7,8 +7,8 @@
 #define CMD_GETK 0x0c
 #define CMD_SET 0x01
 
-// SEC("memcached_koma")
-ssize_t memcached_koma(struct __sk_buff *skb) {
+// SEC("memcached_rakaia")
+ssize_t memcached_rakaia(struct __sk_buff *skb) {
   /*return 4;*/
   struct __attribute__((__packed__)) binary_header_t {
     __u8 magic;

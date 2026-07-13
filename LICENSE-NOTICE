@@ -1,21 +1,21 @@
-Koma OSDI Artifact License Notice
+Rakaia OSDI Artifact License Notice
 
 This repository is distributed as a multi-license research artifact for
-reproducing and comparing the results of the OSDI'26 paper "Koma:
+reproducing and comparing the results of the OSDI'26 paper "Rakaia:
 Achieving Low Tail Latency with In-Kernel Message-Oriented Scheduling".
 
 Unless a file or directory states a more specific license, the
 artifact-authored material in this repository is licensed under the GNU
 General Public License version 2 only (GPL-2.0-only). This default covers
 the top-level artifact documentation, benchmark orchestration scripts,
-experiment configuration, plotting code, and other Koma-authored support
+experiment configuration, plotting code, and other Rakaia-authored support
 files that do not carry their own license notice.
 
 More-specific notices take precedence over this default. In particular:
 
-- The Koma kernel-module sources under `koma/plain-tcp/`, `koma/grpc/`,
-  and `koma/tls/` are marked `GPL-2.0-only` with SPDX identifiers.
-- Kernel patch material under `koma/patches/` follows the license stated
+- The Rakaia kernel-module sources under `rakaia/plain-tcp/`, `rakaia/grpc/`,
+  and `rakaia/tls/` are marked `GPL-2.0-only` with SPDX identifiers.
+- Kernel patch material under `rakaia/patches/` follows the license stated
   in the patched source or added file header, including
   `GPL-2.0 WITH Linux-syscall-note` where marked.
 - Bundled third-party components retain their upstream licenses and

@@ -1,7 +1,7 @@
-# Koma — OSDI Artifact
+# Rakaia — OSDI Artifact
 
-This repository is the artifact for the OSDI'26 paper "Koma: Achieving Low Tail Latency with In-Kernel Message-Oriented Scheduling". It contains the
-Koma kernel-module sources (three variants: plain TCP, gRPC, kTLS), a
+This repository is the artifact for the OSDI'26 paper "Rakaia: Achieving Low Tail Latency with In-Kernel Message-Oriented Scheduling". It contains the
+Rakaia kernel-module sources (three variants: plain TCP, gRPC, kTLS), a
 benchmark harness driven by Fabric, and the third-party tools needed to
 reproduce the paper's performance figures on a CloudLab allocation.
 
@@ -15,24 +15,24 @@ jumpbox); the harness ssh's into the cluster from there. See the
 
 ```bash
 # 1. Clone and create the driver venv.
-git clone <this-artifact-url> ~/koma-osdi26-artifact
-cd ~/koma-osdi26-artifact
+git clone <this-artifact-url> ~/rakaia-osdi26-artifact
+cd ~/rakaia-osdi26-artifact
 python3 -m venv .fab-venv
 .fab-venv/bin/pip install -r bench/requirements.txt
 
 # 2. Point the harness at your allocation. See "Configure your
 #    allocation" for every variable; these six are the minimum.
-export KOMA_OSDI_REMOTE_USER=<cloudlab-user>
-export KOMA_OSDI_SSH_KEY=$HOME/.ssh/id_rsa_cloudlab
-export KOMA_OSDI_SERVER=<server-fqdn>
-export KOMA_OSDI_COORDINATOR=<coord-fqdn>
-export KOMA_OSDI_SYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>
-export KOMA_OSDI_ASYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>
+export RAKAIA_OSDI_REMOTE_USER=<cloudlab-user>
+export RAKAIA_OSDI_SSH_KEY=$HOME/.ssh/id_rsa_cloudlab
+export RAKAIA_OSDI_SERVER=<server-fqdn>
+export RAKAIA_OSDI_COORDINATOR=<coord-fqdn>
+export RAKAIA_OSDI_SYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>
+export RAKAIA_OSDI_ASYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>
 
-# 3. Patch and install the 6.8.0-koma kernel; the server reboots.
+# 3. Patch and install the 6.8.0-rakaia kernel; the server reboots.
 bench/fabs/run_all.sh --patch-kernel
 
-# 4. Build koma modules + benchmark servers, deploy Lancet to clients.
+# 4. Build rakaia modules + benchmark servers, deploy Lancet to clients.
 bench/fabs/run_all.sh --setup
 
 # 5. Run the smallest TCP experiment (~Figure 8 input).
@@ -67,13 +67,13 @@ Each result directory holds one timestamped subdirectory per run with
 
 The paper figures were produced on Utah CloudLab `xl170` nodes. The harness expects:
 
-- **1 server** — patched 6.8.0-koma kernel; runs the spin/silo server
-  binary and (per experiment) the koma kernel module.
+- **1 server** — patched 6.8.0-rakaia kernel; runs the spin/silo server
+  binary and (per experiment) the rakaia kernel module.
 - **1 coordinator** — runs the Lancet coordinator; can be the same host
   as one of the client agents. Defaults to the latency agent.
 - **N clients** — Lancet load/latency agents. The TCP figures use
   ~5 hosts; gRPC figures benefit from more (see
-  `KOMA_OSDI_ASYM_CLIENTS`).
+  `RAKAIA_OSDI_ASYM_CLIENTS`).
 
 **OS requirement: Ubuntu 24.04 LTS** on every host (server,
 coordinator, agents). The kernel-build, bcc, and silo apt-package
@@ -83,8 +83,8 @@ names baked into the harness (e.g., `libllvm18`, `llvm-18-dev`,
 The Utah CloudLab default `UBUNTU24-64-STD` image satisfies this
 requirement.
 
-The harness ssh's to all hosts using the same `KOMA_OSDI_REMOTE_USER`
-and `KOMA_OSDI_SSH_KEY`. Public-key authentication must already be
+The harness ssh's to all hosts using the same `RAKAIA_OSDI_REMOTE_USER`
+and `RAKAIA_OSDI_SSH_KEY`. Public-key authentication must already be
 working from the driver to every host. During Lancet deployment, the
 coordinator also needs SSH access to the agents, either via forwarded
 agent credentials or a key installed locally on the coordinator.
@@ -95,8 +95,8 @@ Run these on the machine that will drive Fabric (your laptop or a
 CloudLab jumpbox). Fabric ssh's from here into the cluster.
 
 ```bash
-git clone <this-artifact-url> ~/koma-osdi26-artifact
-cd ~/koma-osdi26-artifact
+git clone <this-artifact-url> ~/rakaia-osdi26-artifact
+cd ~/rakaia-osdi26-artifact
 python3 -m venv .fab-venv
 .fab-venv/bin/pip install -r bench/requirements.txt
 ```
@@ -113,20 +113,20 @@ Defaults in [`bench/fabs/fab_config.py`](bench/fabs/fab_config.py)
 target our specific Utah allocation and **will not work** for others.
 
 ```bash
-export KOMA_OSDI_REMOTE_USER=<cloudlab-user>
-export KOMA_OSDI_SSH_KEY=$HOME/.ssh/id_rsa_cloudlab     # private key on the driver; forwarded or copied to coord as needed
-export KOMA_OSDI_SERVER=<server-fqdn>
-export KOMA_OSDI_COORDINATOR=<coord-fqdn>
-export KOMA_OSDI_SYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>   # TCP / TLS / Silo native
-export KOMA_OSDI_ASYM_CLIENTS=<c1>,<c2>,...             # gRPC; first host is the latency agent
+export RAKAIA_OSDI_REMOTE_USER=<cloudlab-user>
+export RAKAIA_OSDI_SSH_KEY=$HOME/.ssh/id_rsa_cloudlab     # private key on the driver; forwarded or copied to coord as needed
+export RAKAIA_OSDI_SERVER=<server-fqdn>
+export RAKAIA_OSDI_COORDINATOR=<coord-fqdn>
+export RAKAIA_OSDI_SYM_CLIENTS=<c1>,<c2>,<c3>,<c4>,<c5>   # TCP / TLS / Silo native
+export RAKAIA_OSDI_ASYM_CLIENTS=<c1>,<c2>,...             # gRPC; first host is the latency agent
 ```
 
 `bench/fabs/run_all.sh` uses `ssh-agent` for Fabric auth and will try to
-add `KOMA_OSDI_SSH_KEY` automatically on first use if it is not already
+add `RAKAIA_OSDI_SSH_KEY` automatically on first use if it is not already
 loaded. If your private key is passphrase-protected, expect a prompt the
 first time the script needs to talk to the cluster. For the Lancet
 deployment steps, either keep agent forwarding enabled
-(`KOMA_OSDI_FORWARD_AGENT=true`, the current default) or install the key
+(`RAKAIA_OSDI_FORWARD_AGENT=true`, the current default) or install the key
 on the coordinator explicitly.
 
 ## Server-side bring-up
@@ -134,7 +134,7 @@ on the coordinator explicitly.
 The harness now handles the server checkout automatically. No manual
 clone step is required before `--patch-kernel` or `--setup`.
 
-### 1. Patch and install the Koma kernel
+### 1. Patch and install the Rakaia kernel
 
 From the driver:
 
@@ -148,8 +148,8 @@ This task:
 - Clones or fast-forwards the artifact repo on the server.
 - Downloads `linux-6.8.tar.gz` if needed.
 - Applies both
-[`koma/patches/koma.patch`](koma/patches/koma.patch) (`AF_KOMA` +
-hooks) and [`koma/patches/ktls-module.patch`](koma/patches/ktls-module.patch)
+[`rakaia/patches/rakaia.patch`](rakaia/patches/rakaia.patch) (`AF_RAKAIA` +
+hooks) and [`rakaia/patches/ktls-module.patch`](rakaia/patches/ktls-module.patch)
 (in-kernel TLS hooks needed by the kTLS variant).
 - Builds and installs the patched kernel plus its modules.
 - Updates GRUB, reboots the server automatically, and waits for SSH to
@@ -158,7 +158,7 @@ hooks) and [`koma/patches/ktls-module.patch`](koma/patches/ktls-module.patch)
 After the task returns, verify the rebooted kernel:
 
 ```bash
-ssh $KOMA_OSDI_REMOTE_USER@$KOMA_OSDI_SERVER 'uname -r'   # must print 6.8.0-koma
+ssh $RAKAIA_OSDI_REMOTE_USER@$RAKAIA_OSDI_SERVER 'uname -r'   # must print 6.8.0-rakaia
 ```
 
 For runs that exercise kTLS (`TLS100-Conn80`, `TLS20-Conn80`,
@@ -168,10 +168,10 @@ For runs that exercise kTLS (`TLS100-Conn80`, `TLS20-Conn80`,
 bench/fabs/run_all.sh --verify-ktls
 ```
 
-The out-of-tree Koma modules (`koma/plain-tcp`, `koma/grpc`,
-`koma/tls`) and the user-space benchmark servers are built later by
+The out-of-tree Rakaia modules (`rakaia/plain-tcp`, `rakaia/grpc`,
+`rakaia/tls`) and the user-space benchmark servers are built later by
 `bench/fabs/run_all.sh --setup`, after the server is already running
-`6.8.0-koma`.
+`6.8.0-rakaia`.
 
 ### 2. (Silo experiments only) Optional verification / troubleshooting
 
@@ -197,7 +197,7 @@ If you want to verify the Silo build in isolation (or rebuild after a
 toolchain change) before running experiments, on the server:
 
 ```bash
-cd ~/koma-osdi26-artifact/bench/servers/silo
+cd ~/rakaia-osdi26-artifact/bench/servers/silo
 MODE=perf make -j$(nproc)               # production objects (out-perf.masstree/)
 MODE=perf make -j$(nproc) dbtest        # standalone smoke-test binary
 ```
@@ -211,7 +211,7 @@ NUMA node 0 just before each Silo experiment starts. If you want to
 verify the setting manually on the server, use:
 
 ```bash
-ssh $KOMA_OSDI_REMOTE_USER@$KOMA_OSDI_SERVER \
+ssh $RAKAIA_OSDI_REMOTE_USER@$RAKAIA_OSDI_SERVER \
     'sudo tee /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages <<<16384'
 ```
 
@@ -220,7 +220,7 @@ re-applies it whenever a Silo experiment is launched.
 
 ## Coordinator + client setup
 
-From the driver, after `uname -r` on the server reports `6.8.0-koma`:
+From the driver, after `uname -r` on the server reports `6.8.0-rakaia`:
 
 ```bash
 bench/fabs/run_all.sh --setup
@@ -233,8 +233,8 @@ This:
 - Clones or fast-forwards the artifact repo on both the server and the
   coordinator.
 - Installs Go on the server, coordinator, and clients
-  (default `1.25.0`; override with `KOMA_OSDI_GO_VERSION`).
-- Builds all three Koma module variants on the server against the
+  (default `1.25.0`; override with `RAKAIA_OSDI_GO_VERSION`).
+- Builds all three Rakaia module variants on the server against the
   currently running kernel.
 - Builds the user-space benchmark servers on the server.
 - Installs Lancet dependencies on every client and on the coordinator.
@@ -249,7 +249,7 @@ bench/fabs/run_all.sh --update
 
 `--update` fast-forwards the server repo, refreshes the coordinator
 checkout during deploy, and redeploys Lancet without rerunning the apt
-install steps. If you changed server-side Koma modules, kernel state, or
+install steps. If you changed server-side Rakaia modules, kernel state, or
 toolchain-sensitive binaries, prefer `--setup`.
 
 ## Running experiments
@@ -304,10 +304,10 @@ Additional input-mapping details live in
 
 | Path                       | Contents                                                                  |
 |----------------------------|---------------------------------------------------------------------------|
-| `koma/plain-tcp/`          | Koma kernel module sources for the plain-TCP path.                        |
-| `koma/grpc/`               | Koma kernel module sources for the gRPC path.                             |
-| `koma/tls/`                | Koma kernel module sources for the kTLS path.                             |
-| `koma/patches/`            | Kernel patch set applied by `--patch-kernel`.                             |
+| `rakaia/plain-tcp/`          | Rakaia kernel module sources for the plain-TCP path.                        |
+| `rakaia/grpc/`               | Rakaia kernel module sources for the gRPC path.                             |
+| `rakaia/tls/`                | Rakaia kernel module sources for the kTLS path.                             |
+| `rakaia/patches/`            | Kernel patch set applied by `--patch-kernel`.                             |
 | `bench/servers/`           | spin/silo user-space server binaries (built per experiment).              |
 | `bench/exp_config/`        | YAML run parameters for each experiment.                                  |
 | `bench/fabs/`              | Fabric tasks plus the `run_all.sh` orchestration entry point.             |
@@ -315,9 +315,9 @@ Additional input-mapping details live in
 
 ## License
 
-This artifact is distributed as a multi-license aggregate. Koma-authored
+This artifact is distributed as a multi-license aggregate. Rakaia-authored
 files without a more specific notice are licensed under GPL-2.0-only; the
-Koma kernel-module sources carry GPL-2.0-only SPDX headers, and bundled
+Rakaia kernel-module sources carry GPL-2.0-only SPDX headers, and bundled
 third-party components retain their upstream licenses. See
 [`LICENSE`](LICENSE) for the full GPL-2.0 text and
 [`LICENSE-NOTICE`](LICENSE-NOTICE) for the multi-license aggregation notice.
@@ -328,50 +328,50 @@ Cluster (consumed by `fab_config.py`):
 
 | Variable                      | Default                              | Purpose                                                  |
 |-------------------------------|--------------------------------------|----------------------------------------------------------|
-| `KOMA_OSDI_REMOTE_USER`       | `raina96`                            | ssh user on every host                                   |
-| `KOMA_OSDI_SSH_KEY`           | `~/.ssh/id_rsa`                      | private key path used by Fabric and Lancet deployment    |
-| `KOMA_OSDI_FORWARD_AGENT`     | `true`                               | forward the driver's ssh-agent into Fabric sessions      |
-| `KOMA_OSDI_SERVER`            | `hp161.utah.cloudlab.us`             | server hostname                                          |
-| `KOMA_OSDI_COORDINATOR`       | `hp171.utah.cloudlab.us`             | coordinator hostname                                     |
-| `KOMA_OSDI_SYM_CLIENTS`       | 12 Utah `hp` nodes from `fab_config.py` | TCP/TLS/Silo client agents                            |
-| `KOMA_OSDI_ASYM_CLIENTS`      | 12 Utah `hp` nodes from `fab_config.py` | gRPC client agents; first host is the latency agent   |
-| `KOMA_OSDI_TLS_SERVER`        | = `KOMA_OSDI_SERVER`                 | server for TLS experiments (in case it differs)          |
-| `KOMA_OSDI_HOME_DIR`          | remote `$HOME`                       | override remote home directory                           |
-| `KOMA_OSDI_PROJECT_DIR`       | `$HOME/koma-osdi26-artifact`         | repo path on remote hosts                                |
-| `KOMA_OSDI_PROJECT_REPO`      | `git@github.com:epfl-dcsl/koma-osdi26-artifact.git` | repo cloned/updated by Fabric             |
-| `KOMA_OSDI_GO_VERSION`        | `1.25.0`                             | Go version installed by `--setup`                        |
-| `KOMA_OSDI_IFACE`             | auto-detected                        | override NIC/interface detection in `fab_utils.get_iface` |
-| `KOMA_OSDI_IP_ADDR`           | auto-detected                        | override NIC IP detection in `fab_utils.get_ip_addr`     |
-| `KOMA_OSDI_KOMA_PLAIN_DIR`    | `$KOMA_OSDI_PROJECT_DIR/koma/plain-tcp` | plain-TCP Koma module source dir                     |
-| `KOMA_OSDI_KOMA_GRPC_DIR`     | `$KOMA_OSDI_PROJECT_DIR/koma/grpc`   | gRPC Koma module source dir                              |
-| `KOMA_OSDI_KOMA_TLS_DIR`      | `$KOMA_OSDI_PROJECT_DIR/koma/tls`    | kTLS Koma module source dir                              |
+| `RAKAIA_OSDI_REMOTE_USER`       | `raina96`                            | ssh user on every host                                   |
+| `RAKAIA_OSDI_SSH_KEY`           | `~/.ssh/id_rsa`                      | private key path used by Fabric and Lancet deployment    |
+| `RAKAIA_OSDI_FORWARD_AGENT`     | `true`                               | forward the driver's ssh-agent into Fabric sessions      |
+| `RAKAIA_OSDI_SERVER`            | `hp161.utah.cloudlab.us`             | server hostname                                          |
+| `RAKAIA_OSDI_COORDINATOR`       | `hp171.utah.cloudlab.us`             | coordinator hostname                                     |
+| `RAKAIA_OSDI_SYM_CLIENTS`       | 12 Utah `hp` nodes from `fab_config.py` | TCP/TLS/Silo client agents                            |
+| `RAKAIA_OSDI_ASYM_CLIENTS`      | 12 Utah `hp` nodes from `fab_config.py` | gRPC client agents; first host is the latency agent   |
+| `RAKAIA_OSDI_TLS_SERVER`        | = `RAKAIA_OSDI_SERVER`                 | server for TLS experiments (in case it differs)          |
+| `RAKAIA_OSDI_HOME_DIR`          | remote `$HOME`                       | override remote home directory                           |
+| `RAKAIA_OSDI_PROJECT_DIR`       | `$HOME/rakaia-osdi26-artifact`         | repo path on remote hosts                                |
+| `RAKAIA_OSDI_PROJECT_REPO`      | `git@github.com:epfl-dcsl/rakaia-osdi26-artifact.git` | repo cloned/updated by Fabric             |
+| `RAKAIA_OSDI_GO_VERSION`        | `1.25.0`                             | Go version installed by `--setup`                        |
+| `RAKAIA_OSDI_IFACE`             | auto-detected                        | override NIC/interface detection in `fab_utils.get_iface` |
+| `RAKAIA_OSDI_IP_ADDR`           | auto-detected                        | override NIC IP detection in `fab_utils.get_ip_addr`     |
+| `RAKAIA_OSDI_RAKAIA_PLAIN_DIR`    | `$RAKAIA_OSDI_PROJECT_DIR/rakaia/plain-tcp` | plain-TCP Rakaia module source dir                     |
+| `RAKAIA_OSDI_RAKAIA_GRPC_DIR`     | `$RAKAIA_OSDI_PROJECT_DIR/rakaia/grpc`   | gRPC Rakaia module source dir                              |
+| `RAKAIA_OSDI_RAKAIA_TLS_DIR`      | `$RAKAIA_OSDI_PROJECT_DIR/rakaia/tls`    | kTLS Rakaia module source dir                              |
 
 Module pins (rarely overridden):
 
 | Variable                              | Default                                                     |
 |---------------------------------------|-------------------------------------------------------------|
-| `KOMA_OSDI_GRPC_GO_MODULE_URL`        | `github.com/rainayangg/grpc-go`                             |
-| `KOMA_OSDI_GRPC_GO_MODULE_VERSION`    | `v0.0.0-20260325234553-a764f0be0b0d`                        |
-| `KOMA_OSDI_NET_GO_MODULE_URL`         | `github.com/rainayangg/net-go`                              |
-| `KOMA_OSDI_NET_GO_MODULE_VERSION`     | `v0.0.0-20260313180441-b5081d74e7cf`                        |
-| `KOMA_OSDI_KERNEL_TREE`               | `$HOME/linux-6.8`                                           |
-| `KOMA_OSDI_KERNEL_TARBALL`            | `$HOME/linux-6.8.tar.gz`                                    |
-| `KOMA_OSDI_KERNEL_TARBALL_URL`        | `https://mirrors.edge.kernel.org/.../linux-6.8.tar.gz`      |
-| `KOMA_OSDI_KTLS_KERNEL_RELEASE`       | `6.8.0-koma`                                                |
+| `RAKAIA_OSDI_GRPC_GO_MODULE_URL`        | `github.com/rainayangg/grpc-go`                             |
+| `RAKAIA_OSDI_GRPC_GO_MODULE_VERSION`    | `v0.0.0-20260325234553-a764f0be0b0d`                        |
+| `RAKAIA_OSDI_NET_GO_MODULE_URL`         | `github.com/rainayangg/net-go`                              |
+| `RAKAIA_OSDI_NET_GO_MODULE_VERSION`     | `v0.0.0-20260313180441-b5081d74e7cf`                        |
+| `RAKAIA_OSDI_KERNEL_TREE`               | `$HOME/linux-6.8`                                           |
+| `RAKAIA_OSDI_KERNEL_TARBALL`            | `$HOME/linux-6.8.tar.gz`                                    |
+| `RAKAIA_OSDI_KERNEL_TARBALL_URL`        | `https://mirrors.edge.kernel.org/.../linux-6.8.tar.gz`      |
+| `RAKAIA_OSDI_KTLS_KERNEL_RELEASE`       | `6.8.0-rakaia`                                                |
 
 ## Troubleshooting
 
-- **`uname -r` does not print `6.8.0-koma`** — server didn't boot the
+- **`uname -r` does not print `6.8.0-rakaia`** — server didn't boot the
   patched kernel. Confirm GRUB_DEFAULT, then `sudo reboot`.
 - **kTLS verification fails after `--verify-ktls`** — the loaded
   `tls.ko` doesn't match the one installed under
-  `/lib/modules/6.8.0-koma/kernel/net/tls/`. Most often this means the
-  server is not booted into `6.8.0-koma` (run `uname -r`) or the
+  `/lib/modules/6.8.0-rakaia/kernel/net/tls/`. Most often this means the
+  server is not booted into `6.8.0-rakaia` (run `uname -r`) or the
   `--patch-kernel` step didn't include `ktls-module.patch` (re-run
   `--patch-kernel` and reboot).
 - **Lancet hangs or does not reach published QPS** — gRPC at
   Conn5000 may be load-generator bound. Add more hosts to
-  `KOMA_OSDI_ASYM_CLIENTS`.
+  `RAKAIA_OSDI_ASYM_CLIENTS`.
 - **Silo experiment refuses to start / segfaults early** —
   the automatic hugepage setup likely failed on the server (for example
   due to insufficient free memory or a sudo/write failure under `/sys`).
@@ -379,12 +379,12 @@ Module pins (rarely overridden):
   step 2" and retry the experiment.
 - **Permission denied (publickey) during deploy** — the coordinator
   ssh's to agents during `make deploy`. With the default
-  `KOMA_OSDI_FORWARD_AGENT=true`, make sure the driver's `ssh-agent`
-  has `KOMA_OSDI_SSH_KEY` loaded and that the matching public key is
+  `RAKAIA_OSDI_FORWARD_AGENT=true`, make sure the driver's `ssh-agent`
+  has `RAKAIA_OSDI_SSH_KEY` loaded and that the matching public key is
   accepted by every agent. If you disable agent forwarding, install the
   key on the coordinator explicitly.
 - **Server stalls, freezes, or exits with errors** —
-  `NUM_KOMA_SOCKETS` in `koma/{plain-tcp,grpc,tls}/koma.h`
+  `NUM_RAKAIA_SOCKETS` in `rakaia/{plain-tcp,grpc,tls}/rakaia.h`
   must match the number of cores the server binary runs on. Update the
   `#define` in each variant you use, then rebuild the modules
   (`bench/fabs/run_all.sh --setup` or `make` in the variant directory)

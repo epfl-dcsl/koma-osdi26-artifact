@@ -1,4 +1,4 @@
-# Koma OSDI Benchmark Harness
+# Rakaia OSDI Benchmark Harness
 
 This directory contains the benchmark harness used by the OSDI artifact. It is
 trimmed to the paper performance reproduction matrix; see the top-level
@@ -13,7 +13,7 @@ trimmed to the paper performance reproduction matrix; see the top-level
 
 The harness expects the artifact repository layout:
 
-- Koma sources in `../koma/plain-tcp`, `../koma/grpc`, and `../koma/tls`.
+- Rakaia sources in `../rakaia/plain-tcp`, `../rakaia/grpc`, and `../rakaia/tls`.
 - Dependencies in `../third_party`.
 - Generated outputs in `../results`.
 

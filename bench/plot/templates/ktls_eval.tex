@@ -110,18 +110,18 @@
                     }{x expr=\thisrow{load_floating-tls(QPS)} / 1000, y=latency_floating-tls}{data/ktls_100us.csv}
 
                     \KtlsEvalPlot{
-                        koma_tlsStyle,
+                        rakaia_tlsStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma-tls(QPS)} / 1000, y=latency_koma-tls}{data/ktls_100us.csv}
+                    }{x expr=\thisrow{load_rakaia-tls(QPS)} / 1000, y=latency_rakaia-tls}{data/ktls_100us.csv}
 
                     \KtlsEvalPlot{
-                        komaStyle,
+                        rakaiaStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_100us.csv}
+                    }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_100us.csv}
 
                     \KtlsEvalHundredUsSchedsimPlot{d}
                 \end{axis}
@@ -195,18 +195,18 @@
                     }{x expr=\thisrow{load_floating-tls(QPS)} / 1000, y=latency_floating-tls}{data/ktls_100us.csv}
 
                     \KtlsEvalPlot{
-                        koma_tlsStyle,
+                        rakaia_tlsStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma-tls(QPS)} / 1000, y=latency_koma-tls}{data/ktls_100us.csv}
+                    }{x expr=\thisrow{load_rakaia-tls(QPS)} / 1000, y=latency_rakaia-tls}{data/ktls_100us.csv}
 
                     \KtlsEvalPlot{
-                        komaStyle,
+                        rakaiaStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_100us.csv}
+                    }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_100us.csv}
 
                     \KtlsEvalHundredUsSchedsimPlot{m}
                 \end{axis}
@@ -244,10 +244,10 @@
                             /tikz/every even column/.append style={column sep=0.45cm},
                         },
                     ]
-                    \addlegendimage{koma_tlsStyle}
+                    \addlegendimage{rakaia_tlsStyle}
                     \addlegendentry{\system-kTLS}
 
-                    \addlegendimage{komaStyle}
+                    \addlegendimage{rakaiaStyle}
                     \addlegendentry{\system}
 
                     \addlegendimage{mark=none, solid, cLightBlue}
@@ -282,18 +282,18 @@
                     }{x expr=\thisrow{load_floating-tls(QPS)} / 1000, y=latency_floating-tls}{data/ktls_100us.csv}
 
                     \KtlsEvalPlot{
-                        koma_tlsStyle,
+                        rakaia_tlsStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma-tls(QPS)} / 1000, y=latency_koma-tls}{data/ktls_100us.csv}
+                    }{x expr=\thisrow{load_rakaia-tls(QPS)} / 1000, y=latency_rakaia-tls}{data/ktls_100us.csv}
 
                     \KtlsEvalPlot{
-                        komaStyle,
+                        rakaiaStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_100us.csv}
+                    }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_100us.csv}
 
                     \KtlsEvalHundredUsSchedsimPlot{b}
                 \end{axis}
@@ -354,18 +354,18 @@
                     }{x expr=\thisrow{load_floating-tls(QPS)} / 1000, y=latency_floating-tls}{data/ktls_20us.csv}
 
                     \KtlsEvalPlot{
-                        koma_tlsStyle,
+                        rakaia_tlsStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma-tls(QPS)} / 1000, y=latency_koma-tls}{data/ktls_20us.csv}
+                    }{x expr=\thisrow{load_rakaia-tls(QPS)} / 1000, y=latency_rakaia-tls}{data/ktls_20us.csv}
 
                     \KtlsEvalPlot{
-                        komaStyle,
+                        rakaiaStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{fixed}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+                    }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_20us.csv}
 
                     \KtlsEvalTwentyUsSchedsimPlot{d}
                 \end{axis}
@@ -424,18 +424,18 @@
                     }{x expr=\thisrow{load_floating-tls(QPS)} / 1000, y=latency_floating-tls}{data/ktls_20us.csv}
 
                     \KtlsEvalPlot{
-                        koma_tlsStyle,
+                        rakaia_tlsStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma-tls(QPS)} / 1000, y=latency_koma-tls}{data/ktls_20us.csv}
+                    }{x expr=\thisrow{load_rakaia-tls(QPS)} / 1000, y=latency_rakaia-tls}{data/ktls_20us.csv}
 
                     \KtlsEvalPlot{
-                        komaStyle,
+                        rakaiaStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{exponential}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+                    }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_20us.csv}
 
                     \KtlsEvalTwentyUsSchedsimPlot{m}
                 \end{axis}
@@ -494,18 +494,18 @@
                     }{x expr=\thisrow{load_floating-tls(QPS)} / 1000, y=latency_floating-tls}{data/ktls_20us.csv}
 
                     \KtlsEvalPlot{
-                        koma_tlsStyle,
+                        rakaia_tlsStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma-tls(QPS)} / 1000, y=latency_koma-tls}{data/ktls_20us.csv}
+                    }{x expr=\thisrow{load_rakaia-tls(QPS)} / 1000, y=latency_rakaia-tls}{data/ktls_20us.csv}
 
                     \KtlsEvalPlot{
-                        komaStyle,
+                        rakaiaStyle,
                         x filter/.code={
                             \IfStrEq{\thisrow{dist_config}}{bimodal}{}{\def\pgfmathresult{}}
                         }
-                    }{x expr=\thisrow{load_koma(QPS)} / 1000, y=latency_koma}{data/synthetic_80_20us.csv}
+                    }{x expr=\thisrow{load_rakaia(QPS)} / 1000, y=latency_rakaia}{data/synthetic_80_20us.csv}
 
                     \KtlsEvalTwentyUsSchedsimPlot{b}
                 \end{axis}

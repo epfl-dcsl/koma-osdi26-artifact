@@ -24,12 +24,9 @@
 
 /* libbcc */
 #include <arpa/inet.h>
-#include <bcc/bcc_common.h>
-#include <bcc/libbpf.h>
-#include <bpf/bpf.h>
 
 #include "config.h"
-#include "kcm-helpers.h"
+#include "rakaia-helpers.h"
 
 #define CMD_GET 0x00
 #define CMD_GETK 0x0c
@@ -64,26 +61,6 @@ struct memcached_request {
 static int epollfd[MAX_THREADS];
 static __thread int thread_no;
 static int nr_threads;
-int bpf_prog_fd;
-
-int bpf_init(void)
-{
-	int fd = 0;
-	char bpf_prog[50];
-	void *mod;
-	strcpy(bpf_prog, "memcache-id_kern.c");
-
-	mod = bpf_module_create_c(bpf_prog, 0, NULL, 0, 0, NULL);
-	fd = bcc_prog_load(BPF_PROG_TYPE_SK_SKB, "memcached_rakaia",
-					   bpf_function_start(mod, "memcached_rakaia"),
-					   bpf_function_size(mod, "memcached_rakaia"),
-					   bpf_module_license(mod), bpf_module_kern_version(mod), 0,
-					   NULL, 0);
-	/*printf("fd of kcm ebpf file is: %d\n", fd);*/
-	if (fd == -1)
-		exit(1);
-	return fd;
-}
 
 // Signal handler function
 void signal_handler(int signal)
@@ -135,7 +112,20 @@ static int handle_ret(int fd, ssize_t ret, int line)
 
 	return 0;
 }
+#endif
 
+#include "common.h"
+#include "silo-workload.h"
+
+int main(void) {
+	init_rakaia();
+	silo_workload_init();
+	start_rakaia_server("memcache-id");
+
+	return 0;
+}
+
+#if 0
 static void drive_machine(int worker_id, int fd)
 {
 	ssize_t ret;
@@ -192,8 +182,8 @@ static void drive_machine(int worker_id, int fd)
 		   my_msg.id_header.opcode == CMD_GET ||
 		   my_msg.id_header.opcode == CMD_GETK);
 
-	dcsl_exec_rd_trans(worker_id);
 
+	dcsl_exec_rd_trans(worker_id);
 
 	response.magic = 0x81;
 	response.status = __builtin_bswap16(1);
@@ -238,7 +228,8 @@ static void *tcp_thread_main(void *arg)
 	int sock;
 	int one;
 	int ret, i, nfds, conn_sock;
-    int kcm_fd0, kcm_fd_cur;
+	int rakaia_pull_ret;
+	int rakaia_fd0, rakaia_fd_cur;
 	struct epoll_event ev, events[CONFIG_MAX_EVENTS];
 	struct conn *conn;
 
@@ -288,6 +279,10 @@ static void *tcp_thread_main(void *arg)
 	assert(!ret);
 
 	// The ONLY rakaia socket.
+	rakaia_fd0 = rakaia_init();
+	epoll_ctl_add(rakaia_fd0, thread_no);
+
+	rakaia_pull_ret = rakaia_pull(rakaia_fd0);
 	while (1) {
 		nfds = epoll_wait(epollfd[thread_no], events, CONFIG_MAX_EVENTS, -1);
 		assert(nfds > 0);
@@ -305,16 +300,7 @@ static void *tcp_thread_main(void *arg)
 					exit(1);
 				}
 				// attach the tcp sock to the rakaia system.
-                kcm_fd0 = kcm_init();
-                kcm_attach(kcm_fd0, conn_sock, bpf_prog_fd);
-                epoll_ctl_add(kcm_fd0, thread_no);
-                for (int j = 0; j < nr_threads; j++) {
-                    if (j != thread_no) {
-                      kcm_fd_cur = kcm_clone(kcm_fd0);
-                      printf("thread %d is cloning kcm socket for fd %d\n", j, conn_sock);
-                      epoll_ctl_add(kcm_fd_cur, j);
-                    }
-                  }
+				rakaia_attach(rakaia_fd0, conn_sock);
 			} else {
 				if (events[i].events & (EPOLLHUP | EPOLLERR)) {
 					close(events[i].data.fd);
@@ -346,7 +332,6 @@ int main(int argc, char *argv[])
 	signal(SIGTERM, signal_handler);
 	signal(SIGINT, signal_handler);
 
-	bpf_prog_fd = bpf_init();
 
 	/*The Silo init calls.*/
 	dcsl_init_db();
@@ -366,18 +351,6 @@ int main(int argc, char *argv[])
 	}
 
 	tcp_thread_main(0);
-	close(bpf_prog_fd);
 	return 0;
 }
 #endif
-
-#include "common.h"
-#include "silo-workload.h"
-
-int main(void) {
-	init_kcm();
-	silo_workload_init();
-	start_kcm_server("memcache-id");
-
-	return 0;
-}
